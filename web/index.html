@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ferray + WASM Demo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+  }
+  h1 {
+    font-size: 2rem;
+    margin-bottom: 0.25rem;
+  }
+  .subtitle { color: #94a3b8; margin-bottom: 2rem; }
+  .card {
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    width: 100%;
+    max-width: 700px;
+    border: 1px solid #334155;
+  }
+  .card h2 { font-size: 1.1rem; margin-bottom: 0.75rem; color: #38bdf8; }
+  button {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 0.5rem 1.25rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  button:hover { background: #2563eb; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .result {
+    background: #0f172a;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-top: 0.75rem;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 0.9rem;
+    white-space: pre-wrap;
+    word-break: break-all;
+    min-height: 2rem;
+  }
+  canvas { width: 100%; border-radius: 8px; background: #0f172a; }
+  .row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+  label { font-size: 0.85rem; color: #94a3b8; }
+  input[type="range"] { width: 120px; accent-color: #3b82f6; }
+  input[type="number"] {
+    background: #0f172a; border: 1px solid #334155; color: #e2e8f0;
+    border-radius: 6px; padding: 0.25rem 0.5rem; width: 80px;
+  }
+  .tag {
+    display: inline-block;
+    background: #334155; padding: 0.1rem 0.5rem; border-radius: 4px;
+    font-size: 0.75rem; margin-right: 0.5rem;
+  }
+</style>
+</head>
+<body>
+
+<h1>🦀 Ferray × WASM</h1>
+<p class="subtitle">Rust-native NumPy equivalent compiled to WebAssembly</p>
+
+<div class="card">
+  <h2>📐 Sum of Squares</h2>
+  <p style="font-size:0.85rem;color:#94a3b8;margin-bottom:0.5rem">
+    Creates a ferray <code>Array&lt;f64, Ix1&gt;</code>, maps <code>x²</code>, and sums.
+  </p>
+  <div class="row">
+    <button id="btn-sos">Compute [1,2,3,4,5]</button>
+  </div>
+  <div class="result" id="res-sos">—</div>
+</div>
+
+<div class="card">
+  <h2>🌊 Sine Wave Generator</h2>
+  <p style="font-size:0.85rem;color:#94a3b8;margin-bottom:0.5rem">
+    Uses <code>ferray::linspace</code> and <code>sin(2πft)</code>
+  </p>
+  <div class="row" style="margin-bottom:0.5rem">
+    <label>Frequency: <input type="range" id="freq" min="1" max="20" value="3"></label>
+    <span id="freq-val">3 Hz</span>
+    <label>Samples: <input type="number" id="samples" value="200" min="10" max="2000"></label>
+  </div>
+  <canvas id="canvas-wave" height="250"></canvas>
+</div>
+
+<div class="card">
+  <h2>🔵 Gaussian Blur (1D Convolution)</h2>
+  <p style="font-size:0.85rem;color:#94a3b8;margin-bottom:0.5rem">
+    Smooths signal data using a Gaussian kernel (σ adjustable). Real signal processing!
+  </p>
+  <div class="row" style="margin-bottom:0.5rem">
+    <label>Sigma: <input type="range" id="sigma" min="0.5" max="8" step="0.5" value="3"></label>
+    <span id="sigma-val">3.0</span>
+    <button id="btn-blur">Apply Blur</button>
+  </div>
+  <canvas id="canvas-blur" height="250"></canvas>
+</div>
+
+<div class="card">
+  <h2>📊 Statistics</h2>
+  <p style="font-size:0.85rem;color:#94a3b8;margin-bottom:0.5rem">
+    Min, max, mean, median, std on sine wave data
+  </p>
+  <div class="row">
+    <button id="btn-stats">Compute Stats</button>
+  </div>
+  <div class="result" id="res-stats">—</div>
+</div>
+
+<div class="card" style="text-align:center;font-size:0.8rem;color:#64748b">
+  Built with <a href="https://github.com/forecast-bio/ferray" style="color:#38bdf8">Ferray</a> (Rust) + WebAssembly · 88 KB wasm
+</div>
+
+<script type="module">
+import init, { sum_of_squares, linspace, sine_wave, gaussian_blur, stats } from './pkg/ferray_wasm_poc.js';
+
+async function main() {
+  await init();
+
+  // --- Sum of Squares ---
+  document.getElementById('btn-sos').onclick = () => {
+    const result = sum_of_squares([1, 2, 3, 4, 5]);
+    document.getElementById('res-sos').textContent =
+      `sum([1², 2², 3², 4², 5²]) = ${result}`;
+  };
+
+  // --- Sine wave ---
+  const canvasWave = document.getElementById('canvas-wave');
+  const ctxWave = canvasWave.getContext('2d');
+
+  function drawWave(freq, samples) {
+    const data = sine_wave(freq, samples);
+    const w = canvasWave.width = canvasWave.clientWidth;
+    const h = canvasWave.height;
+
+    ctxWave.clearRect(0, 0, w, h);
+    ctxWave.strokeStyle = '#38bdf8';
+    ctxWave.lineWidth = 2;
+    ctxWave.beginPath();
+
+    for (let i = 0; i < data.length; i++) {
+      const x = (i / (data.length - 1)) * w;
+      const y = h / 2 - data[i] * (h / 2.5);
+      if (i === 0) ctxWave.moveTo(x, y);
+      else ctxWave.lineTo(x, y);
+    }
+    ctxWave.stroke();
+
+    // axes
+    ctxWave.strokeStyle = '#334155';
+    ctxWave.lineWidth = 1;
+    ctxWave.beginPath();
+    ctxWave.moveTo(0, h/2); ctxWave.lineTo(w, h/2);
+    ctxWave.stroke();
+  }
+
+  const freqSlider = document.getElementById('freq');
+  const freqVal = document.getElementById('freq-val');
+  const samplesInput = document.getElementById('samples');
+
+  function updateWave() {
+    const f = parseInt(freqSlider.value);
+    const s = parseInt(samplesInput.value);
+    freqVal.textContent = f + ' Hz';
+    drawWave(f, s);
+  }
+
+  freqSlider.oninput = updateWave;
+  samplesInput.onchange = updateWave;
+  updateWave();
+
+  // --- Gaussian blur ---
+  const canvasBlur = document.getElementById('canvas-blur');
+  const ctxBlur = canvasBlur.getContext('2d');
+
+  function generateNoisySignal(n) {
+    const signal = [];
+    for (let i = 0; i < n; i++) {
+      const x = i / n;
+      // Two sine components + noise
+      signal.push(
+        Math.sin(2 * Math.PI * 3 * x) * 0.6 +
+        Math.sin(2 * Math.PI * 17 * x) * 0.3 +
+        (Math.random() - 0.5) * 0.4
+      );
+    }
+    return signal;
+  }
+
+  let currentSignal = generateNoisySignal(300);
+
+  function drawBlur(original, blurred, sigma) {
+    const w = canvasBlur.width = canvasBlur.clientWidth;
+    const h = canvasBlur.height;
+
+    ctxBlur.clearRect(0, 0, w, h);
+
+    function drawLine(data, color, alpha) {
+      ctxBlur.strokeStyle = color;
+      ctxBlur.globalAlpha = alpha;
+      ctxBlur.lineWidth = 1.5;
+      ctxBlur.beginPath();
+      for (let i = 0; i < data.length; i++) {
+        const x = (i / (data.length - 1)) * w;
+        const y = h / 2 - data[i] * (h / 3);
+        if (i === 0) ctxBlur.moveTo(x, y);
+        else ctxBlur.lineTo(x, y);
+      }
+      ctxBlur.stroke();
+      ctxBlur.globalAlpha = 1;
+    }
+
+    drawLine(original, '#64748b', 0.5);  // original (faint)
+    drawLine(blurred, '#f59e0b', 1.0);   // smoothed
+  }
+
+  document.getElementById('btn-blur').onclick = () => {
+    currentSignal = generateNoisySignal(300);
+    const sigma = parseFloat(document.getElementById('sigma').value);
+    const kernelSize = Math.max(3, Math.ceil(sigma * 6) | 1); // odd kernel
+    const blurred = gaussian_blur(currentSignal, sigma, kernelSize);
+    drawBlur(currentSignal, blurred, sigma);
+  };
+
+  document.getElementById('sigma').oninput = (e) => {
+    document.getElementById('sigma-val').textContent = parseFloat(e.target.value).toFixed(1);
+  };
+
+  // Initial blur draw
+  (() => {
+    const sigma = 3.0;
+    const blurred = gaussian_blur(currentSignal, sigma, 19);
+    drawBlur(currentSignal, blurred, sigma);
+  })();
+
+  // --- Stats ---
+  document.getElementById('btn-stats').onclick = () => {
+    const data = sine_wave(3, 1000);
+    document.getElementById('res-stats').textContent = stats(data);
+  };
+}
+
+main();
+</script>
+
+</body>
+</html>
