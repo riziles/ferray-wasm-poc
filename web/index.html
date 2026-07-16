@@ -120,7 +120,7 @@
 <div class="card">
   <h2>📊 Statistics</h2>
   <p style="font-size:0.85rem;color:#94a3b8;margin-bottom:0.5rem">
-    Uses <code>ferray_stats::min/max/mean/median/std</code> — real NumPy-equivalent reductions
+    Uses <code>ferray_stats::min/max/mean/median/std</code> on the visible sine wave above — adjust frequency to see stats change!
   </p>
   <div class="row">
     <button id="btn-stats">Compute Stats</button>
@@ -419,6 +419,9 @@ async function main() {
     const s = parseInt(samplesInput.value);
     freqVal.textContent = f + ' Hz';
     drawWave(f, s);
+    // Auto-update stats when wave changes
+    const data = sine_wave(f, s);
+    document.getElementById('res-stats').textContent = stats(data);
   }
 
   freqSlider.oninput = updateWave;
@@ -491,7 +494,9 @@ async function main() {
 
   // --- Stats ---
   document.getElementById('btn-stats').onclick = () => {
-    const data = sine_wave(3, 1000);
+    const f = parseInt(document.getElementById('freq').value);
+    const s = parseInt(document.getElementById('samples').value);
+    const data = sine_wave(f, s);
     document.getElementById('res-stats').textContent = stats(data);
   };
 
