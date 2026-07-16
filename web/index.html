@@ -129,11 +129,82 @@
 </div>
 
 <div class="card">
+  <h2>📈 FFT Spectrum Analyzer</h2>
+  <p style="font-size:0.85rem;color:#94a3b8;margin-bottom:0.5rem">
+    Uses <code>ferray_fft::rfft</code> + <code>ferray_window::hanning</code> — real signal processing on WASM!
+  </p>
+  <div class="row" style="margin-bottom:0.5rem;gap:0.75rem">
+    <label>Window:
+      <select id="fft-window" style="background:#0f172a;border:1px solid #334155;color:#e2e8f0;border-radius:6px;padding:0.2rem 0.5rem">
+        <option value="hanning">Hanning</option>
+        <option value="hamming" selected>Hamming</option>
+        <option value="blackman">Blackman</option>
+        <option value="bartlett">Bartlett</option>
+      </select>
+    </label>
+    <button id="btn-fft">Run FFT</button>
+    <span id="fft-peak" style="font-size:0.8rem;color:#f59e0b"></span>
+  </div>
+  <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
+    <div style="flex:1;min-width:280px">
+      <div style="font-size:0.75rem;color:#64748b;margin-bottom:0.25rem">Time domain (windowed)</div>
+      <canvas id="canvas-fft-signal" height="180"></canvas>
+    </div>
+    <div style="flex:1;min-width:280px">
+      <div style="font-size:0.75rem;color:#64748b;margin-bottom:0.25rem">Frequency domain (magnitude)</div>
+      <canvas id="canvas-fft-spectrum" height="180"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>🪟 Window Function Gallery</h2>
+  <p style="font-size:0.85rem;color:#94a3b8;margin-bottom:0.5rem">
+    Uses <code>ferray_window</code> — Hanning, Hamming, Blackman, Bartlett, Cosine, Nuttall
+  </p>
+  <div class="row" style="margin-bottom:0.5rem;gap:0.75rem">
+    <label>Points: <input type="range" id="win-points" min="32" max="512" value="256"></label>
+    <span id="win-points-val" style="font-size:0.8rem">256</span>
+  </div>
+  <canvas id="canvas-windows" height="250"></canvas>
+  <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:0.5rem;font-size:0.75rem;color:#64748b">
+    <span style="color:#38bdf8">■ Hanning</span>
+    <span style="color:#f59e0b">■ Hamming</span>
+    <span style="color:#22c55e">■ Blackman</span>
+    <span style="color:#a78bfa">■ Bartlett</span>
+    <span style="color:#f87171">■ Cosine</span>
+    <span style="color:#fb923c">■ Nuttall</span>
+  </div>
+</div>
+
+<div class="card">
+  <h2>🔥 2D Function Heatmap</h2>
+  <p style="font-size:0.85rem;color:#94a3b8;margin-bottom:0.5rem">
+    Computes 2D radial functions at 200×200 resolution. Canvas <code>ImageData</code> pixel rendering.
+  </p>
+  <div class="row" style="margin-bottom:0.5rem;gap:0.75rem">
+    <label>Function:
+      <select id="heatmap-fn" style="background:#0f172a;border:1px solid #334155;color:#e2e8f0;border-radius:6px;padding:0.2rem 0.5rem">
+        <option value="sinc">sinc(r) = sin(r)/r</option>
+        <option value="ripple">ripple = sin(r)·exp(-r)</option>
+        <option value="gaussian">gaussian spot</option>
+        <option value="waves">spiral waves</option>
+        <option value="eggholder" selected>Eggholder function</option>
+      </select>
+    </label>
+    <label>Frequency: <input type="range" id="heatmap-freq" min="1" max="12" value="4"></label>
+    <span id="heatmap-freq-val" style="font-size:0.8rem">4</span>
+    <button id="btn-heatmap">Generate</button>
+  </div>
+  <canvas id="canvas-heatmap" width="400" height="400" style="width:100%;max-width:400px;aspect-ratio:1;image-rendering:pixelated"></canvas>
+</div>
+
+<div class="card">
   <h2>🧬 What's happening under the hood</h2>
 
   <h3 style="color:#f59e0b;margin-top:1rem">The stack</h3>
   <p>
-    Every computation on this page runs inside a single <strong>~213 KB WebAssembly binary</strong>
+    Every computation on this page runs inside a single <strong>~510 KB WebAssembly binary</strong>
     compiled from Rust. When you click a button or move a slider, JavaScript calls into
     WASM, which executes <a href="https://github.com/dollspace-gay/ferray" style="color:#38bdf8">Ferray</a>
     — a Rust-native, hand-tuned NumPy equivalent that beats NumPy on 73% of benchmarks —
@@ -142,14 +213,16 @@
   <p style="margin-top:0.5rem">
     The WASM binary bundles <strong>ferray-core</strong> (N-dimensional arrays),
     <strong>ferray-ufunc</strong> (SIMD-accelerated sin/cos/exp/log/…),
-    and <strong>ferray-stats</strong> (min/max/mean/median/std/var/…).
+    <strong>ferray-stats</strong> (min/max/mean/median/std/var/…),
+    <strong>ferray-fft</strong> (real FFT via rustfft),
+    and <strong>ferray-window</strong> (20+ window functions).
     It was produced with <code>cargo build --target wasm32-unknown-unknown</code>
     and <code>wasm-bindgen</code>. Deployment is handled by a
     <strong>GitHub Actions</strong> workflow that builds from source on every push and
     deploys to GitHub Pages automatically.
   </p>
 
-  <h3 style="color:#f59e0b;margin-top:1.25rem">Ferray crates used</h3>
+  <h3 style="color:#f59e0b;margin-top:1.25rem">Ferray crates used (6 of 18 workspace crates)</h3>
   <table style="width:100%;font-size:0.85rem;border-collapse:collapse;margin-top:0.5rem">
     <thead>
       <tr style="text-align:left;border-bottom:1px solid #334155">
@@ -183,6 +256,18 @@
         <td style="padding:0.35rem 0.5rem"><code>min, max, mean,<br>median, std</code></td>
         <td style="padding:0.35rem 0.5rem">Statistics</td>
         <td style="padding:0.35rem 0.5rem;color:#94a3b8">Pairwise SIMD reductions (28.8× faster than NumPy on native!)</td>
+      </tr>
+      <tr>
+        <td style="padding:0.35rem 0.5rem;color:#fb923c">ferray-fft</td>
+        <td style="padding:0.35rem 0.5rem"><code>rfft</code></td>
+        <td style="padding:0.35rem 0.5rem">FFT Spectrum</td>
+        <td style="padding:0.35rem 0.5rem;color:#94a3b8">Real FFT via rustfft (17.2× faster than NumPy at N=64!)</td>
+      </tr>
+      <tr>
+        <td style="padding:0.35rem 0.5rem;color:#a78bfa">ferray-window</td>
+        <td style="padding:0.35rem 0.5rem"><code>hanning, hamming,<br>blackman, bartlett,<br>cosine, nuttall</code></td>
+        <td style="padding:0.35rem 0.5rem">Window Gallery</td>
+        <td style="padding:0.35rem 0.5rem;color:#94a3b8">20+ window functions with scipy-parity Chebyshev/DPS</td>
       </tr>
     </tbody>
   </table>
@@ -277,13 +362,13 @@
 <div class="card" style="text-align:center;font-size:0.8rem;color:#64748b">
   <a href="https://github.com/riziles/ferray-wasm-poc" style="color:#38bdf8">Source on GitHub</a>
   · Built with <a href="https://github.com/dollspace-gay/ferray" style="color:#38bdf8">Ferray</a> (Rust) + WebAssembly
-  · ~213 KB wasm
+  · ~510 KB wasm <span style="font-size:0.7rem">(core + ufunc + stats + fft + window)</span>
   <br><br>
   <span style="color:#64748b">🤖 This entire site — Rust code, WASM build pipeline, GitHub Actions deploy, and this page — was built by a <a href="https://github.com/earendil-works/pi-coding-agent" style="color:#38bdf8">pi</a> coding agent running DeepSeek V4 Pro.</span>
 </div>
 
 <script type="module">
-import init, { sum_of_squares, linspace, sine_wave, gaussian_blur, stats } from './pkg/ferray_wasm_poc.js';
+import init, { sum_of_squares, linspace, sine_wave, gaussian_blur, stats, fft_magnitude, window_fn, radial_2d, composite_signal } from './pkg/ferray_wasm_poc.js';
 
 async function main() {
   await init();
@@ -409,6 +494,192 @@ async function main() {
     const data = sine_wave(3, 1000);
     document.getElementById('res-stats').textContent = stats(data);
   };
+
+  // ================================================================
+  // NEW DEMOS: FFT, Windows, 2D Heatmap
+  // ================================================================
+
+  // --- FFT Spectrum Analyzer ---
+  const canvasFftSig = document.getElementById('canvas-fft-signal');
+  const ctxFftSig = canvasFftSig.getContext('2d');
+  const canvasFftSpec = document.getElementById('canvas-fft-spectrum');
+  const ctxFftSpec = canvasFftSpec.getContext('2d');
+
+  function drawLineChart(canvas, ctx, data, color, label) {
+    const w = canvas.width = canvas.clientWidth;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    // Grid
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i < 4; i++) {
+      const y = h * i / 4;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    }
+
+    // Data
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let i = 0; i < data.length; i++) {
+      const x = (i / (data.length - 1)) * w;
+      const y = h / 2 - data[i] * (h / 2.5);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  function drawBarChart(canvas, ctx, data, color) {
+    const w = canvas.width = canvas.clientWidth;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    const maxVal = Math.max(...data, 1e-10);
+    const barW = Math.max(1, w / data.length - 1);
+    ctx.fillStyle = color;
+    for (let i = 0; i < data.length; i++) {
+      const barH = (data[i] / maxVal) * (h - 4);
+      ctx.fillRect(i * (w / data.length), h - barH, barW, barH);
+    }
+  }
+
+  document.getElementById('btn-fft').onclick = () => {
+    // Generate composite signal: 50 Hz + 120 Hz + 250 Hz + noise
+    const N = 512;
+    const signal = [];
+    for (let i = 0; i < N; i++) {
+      const t = i / N;
+      signal.push(
+        Math.sin(2 * Math.PI * 50 * t) * 1.5 +
+        Math.sin(2 * Math.PI * 120 * t) * 1.0 +
+        Math.sin(2 * Math.PI * 250 * t) * 0.5 +
+        (Math.random() - 0.5) * 0.3
+      );
+    }
+
+    // Apply window
+    const winType = document.getElementById('fft-window').value;
+    const win = window_fn(winType, N);
+    const windowed = signal.map((s, i) => s * win[i]);
+
+    // FFT
+    const spectrum = fft_magnitude(windowed);
+
+    // Find peak
+    let peakIdx = 0, peakVal = 0;
+    for (let i = 1; i < spectrum.length; i++) {
+      if (spectrum[i] > peakVal) { peakVal = spectrum[i]; peakIdx = i; }
+    }
+    const sr = N; // sample rate = N (1 second duration)
+    document.getElementById('fft-peak').textContent =
+      `Peak: ${Math.round(peakIdx)} Hz`;
+
+    drawLineChart(canvasFftSig, ctxFftSig, windowed, '#38bdf8');
+    drawBarChart(canvasFftSpec, ctxFftSpec, spectrum.slice(0, 128), '#f59e0b');
+  };
+
+  // Run initial FFT
+  document.getElementById('btn-fft').click();
+
+  // --- Window Function Gallery ---
+  const canvasWin = document.getElementById('canvas-windows');
+  const ctxWin = canvasWin.getContext('2d');
+
+  const winColors = {
+    hanning: '#38bdf8',
+    hamming: '#f59e0b',
+    blackman: '#22c55e',
+    bartlett: '#a78bfa',
+    cosine: '#f87171',
+    nuttall: '#fb923c'
+  };
+
+  function drawWindows(points) {
+    const w = canvasWin.width = canvasWin.clientWidth;
+    const h = canvasWin.height;
+    ctxWin.clearRect(0, 0, w, h);
+
+    // Grid
+    ctxWin.strokeStyle = '#1e293b';
+    ctxWin.lineWidth = 0.5;
+    for (let i = 0; i < 5; i++) {
+      const y = h * i / 4;
+      ctxWin.beginPath(); ctxWin.moveTo(0, y); ctxWin.lineTo(w, y); ctxWin.stroke();
+    }
+    // 0.5 line
+    ctxWin.strokeStyle = '#334155';
+    ctxWin.beginPath(); ctxWin.moveTo(0, h/2); ctxWin.lineTo(w, h/2); ctxWin.stroke();
+
+    const windows = ['hanning', 'hamming', 'blackman', 'bartlett', 'cosine', 'nuttall'];
+    for (const name of windows) {
+      const data = window_fn(name, points);
+      ctxWin.strokeStyle = winColors[name];
+      ctxWin.lineWidth = 1.5;
+      ctxWin.beginPath();
+      for (let i = 0; i < data.length; i++) {
+        const x = (i / (data.length - 1)) * w;
+        const y = (1 - data[i]) * h; // 1.0 at top, 0.0 at bottom
+        if (i === 0) ctxWin.moveTo(x, y);
+        else ctxWin.lineTo(x, y);
+      }
+      ctxWin.stroke();
+    }
+  }
+
+  document.getElementById('win-points').oninput = (e) => {
+    const pts = parseInt(e.target.value);
+    document.getElementById('win-points-val').textContent = pts;
+    drawWindows(pts);
+  };
+  drawWindows(256);
+
+  // --- 2D Function Heatmap ---
+  const canvasHeat = document.getElementById('canvas-heatmap');
+  const ctxHeat = canvasHeat.getContext('2d');
+
+  document.getElementById('heatmap-freq').oninput = (e) => {
+    document.getElementById('heatmap-freq-val').textContent = e.target.value;
+  };
+
+  document.getElementById('btn-heatmap').onclick = () => {
+    const fnType = document.getElementById('heatmap-fn').value;
+    const freq = parseInt(document.getElementById('heatmap-freq').value);
+    const size = 200;
+    const data = radial_2d(size, fnType, freq);
+
+    canvasHeat.width = size;
+    canvasHeat.height = size;
+    const imageData = ctxHeat.createImageData(size, size);
+
+    // Rainbow colormap: blue → cyan → green → yellow → red
+    function rainbow(t) {
+      // t in [-1, 1] mapped to [0, 1]
+      const v = (t + 1) / 2;
+      let r, g, b;
+      if (v < 0.25)      { r = 0; g = v * 4; b = 1; }
+      else if (v < 0.5)  { r = 0; g = 1; b = 1 - (v - 0.25) * 4; }
+      else if (v < 0.75) { r = (v - 0.5) * 4; g = 1; b = 0; }
+      else              { r = 1; g = 1 - (v - 0.75) * 4; b = 0; }
+      return [Math.floor(r * 255), Math.floor(g * 255), Math.floor(b * 255)];
+    }
+
+    // Auto-normalize based on data range
+    const absMax = Math.max(...data.map(Math.abs), 1e-10);
+
+    for (let i = 0; i < data.length; i++) {
+      const [r, g, b] = rainbow(data[i] / absMax);
+      imageData.data[i * 4] = r;
+      imageData.data[i * 4 + 1] = g;
+      imageData.data[i * 4 + 2] = b;
+      imageData.data[i * 4 + 3] = 255;
+    }
+    ctxHeat.putImageData(imageData, 0, 0);
+  };
+
+  // Initial heatmap
+  document.getElementById('btn-heatmap').click();
 }
 
 main();
