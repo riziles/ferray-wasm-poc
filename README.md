@@ -1,6 +1,6 @@
 # Ferray + WASM POC
 
-A signal processing demo using [Ferray](https://github.com/forecast-bio/ferray) (the Rust NumPy replacement) compiled to WebAssembly and deployed to GitHub Pages.
+A signal processing demo using [Ferray](https://github.com/dollspace-gay/ferray) (the Rust NumPy replacement) compiled to WebAssembly and deployed to GitHub Pages.
 
 **Live site:** [riziles.github.io/ferray-wasm-poc](https://riziles.github.io/ferray-wasm-poc)
 
@@ -27,13 +27,21 @@ GitHub Actions builds & deploys to GitHub Pages
 
 ## WASM limitations
 
-Only `ferray-core` compiles to WASM out of the box. The rest of the 18-crate workspace is blocked by a single dependency chain:
+Only `ferray-core` and `ferray-fft` compile to WASM out of the box (as of v0.5.0).
+
+**✅ Wasm-compatible:**
+- `ferray-core` — N-dimensional arrays, indexing, shape manipulation
+- `ferray-fft` — FFT operations via rustfft/realfft (no ufunc dependency)
+
+**❌ Blocked by core-math:**
 
 ```
 ferray-ufunc → core-math → core-math-sys → bindgen → libclang
 ```
 
-`bindgen` generates C FFI bindings at build time and requires `libclang`, which can't resolve for the `wasm32-unknown-unknown` target. This transitively blocks `ferray-stats`, `ferray-fft`, and `ferray-linalg`.
+`bindgen` generates C FFI bindings at build time and requires `libclang`, which can't resolve for the `wasm32-unknown-unknown` target. This transitively blocks `ferray-stats` and `ferray-linalg`.
+
+**🔄 Partial progress:** `ferray-linalg` now has a wasm32/riscv64 fallback for GEMM using `faer`, removing one architectural barrier — but it still depends on `ferray-ufunc` for elementwise ops.
 
 The fix is ~2 hours of work: add a `wasm` feature to `ferray-ufunc` that swaps `core-math` for the pure-Rust `libm` crate in `cr_math.rs`.
 
