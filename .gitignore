@@ -2,3 +2,7 @@
 /Cargo.lock
 /node_modules
 .playwright-cli/
+
+# Generated WASM glue — built by CI and scripts/build-wasm.sh
+svelte-app/src/lib/wasm/ferray_wasm_poc.js
+svelte-app/src/lib/wasm/ferray_wasm_poc_bg.wasm
