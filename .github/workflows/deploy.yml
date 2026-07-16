@@ -26,7 +26,20 @@ jobs:
       - name: Build WASM
         run: |
           cargo build --target wasm32-unknown-unknown --release
-          wasm-bindgen --target web --no-typescript --out-dir web/pkg target/wasm32-unknown-unknown/release/ferray_wasm_poc.wasm
+          wasm-bindgen --target web --no-typescript --out-dir svelte-app/src/lib/wasm target/wasm32-unknown-unknown/release/ferray_wasm_poc.wasm
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install JS deps
+        run: npm ci
+        working-directory: svelte-app
+
+      - name: Build Svelte app
+        run: npm run build
+        working-directory: svelte-app
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -34,7 +47,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: web
+          path: svelte-app/dist
 
       - name: Deploy to GitHub Pages
         id: deployment
