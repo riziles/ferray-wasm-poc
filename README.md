@@ -6,12 +6,12 @@ A signal processing demo using [Ferray](https://github.com/dollspace-gay/ferray)
 
 ## What it does
 
-Four interactive demos running entirely in an 88 KB WASM binary:
+Four interactive demos running entirely in a ~234 KB WASM binary:
 
 - **Sum of Squares** — Creates a `ferray::Array<f64, Ix1>`, maps x², and sums
-- **Sine Wave Generator** — Uses `ferray::linspace` with adjustable frequency and sample count
+- **Sine Wave Generator** — Uses `ferray::linspace` + `ferray-ufunc::sin` (SIMD on native, libm on WASM)
 - **Gaussian Blur** — 1D convolution with a Gaussian kernel (adjustable σ)
-- **Statistics** — Min, max, mean, median, std on sine wave data
+- **Statistics** — Uses `ferray-stats::min/max/mean/median/std` — real NumPy-equivalent reductions in the browser
 
 ## Architecture
 
@@ -20,32 +20,44 @@ JavaScript (browser)
     ↓
 wasm-bindgen glue
     ↓
-Rust → ferray-core (N-dimensional arrays, linspace, iterators)
+Rust → ferray-core (arrays) + ferray-ufunc (sin/exp) + ferray-stats (reductions)
     ↓
 GitHub Actions builds & deploys to GitHub Pages
 ```
 
-## WASM limitations
+## WASM status — SOLVED ✅
 
-Only `ferray-core` and `ferray-fft` compile to WASM out of the box (as of v0.5.0).
+The upstream blocker (`ferray-ufunc → core-math → bindgen → libclang`) has been fixed in [riziles/ferray-riz-dev](https://github.com/riziles/ferray-riz-dev/pull/1) by swapping `core-math` for the pure-Rust `libm` crate on `wasm32` targets using target-conditional dependencies (no feature flags needed).
 
-**✅ Wasm-compatible:**
-- `ferray-core` — N-dimensional arrays, indexing, shape manipulation
-- `ferray-fft` — FFT operations via rustfft/realfft (no ufunc dependency)
+**WASM compatibility after the fix:**
 
-**❌ Blocked by core-math:**
+| Crate | Status | Notes |
+|---|---|---|
+| `ferray-core` | ✅ | N-dimensional arrays, creation, indexing |
+| `ferray-ufunc` | ✅ | sin/cos/exp/log/arcsin/… via libm on WASM |
+| `ferray-stats` | ✅ | min/max/mean/median/std/var/quantile/… |
+| `ferray-fft` | ✅ | Always worked (no ufunc dep) |
+| `ferray-linalg` | ✅ | faer sans rayon; GEMM wasm32 fallback |
+| `ferray-random` | ✅ | getrandom + wasm_js |
+| `ferray-polynomial` | ✅ | Unblocked by linalg/ufunc fixes |
+| `ferray-window` | ✅ | Always worked |
+| `ferray-io` | ❌ | Blocked by zstd-sys (needs C compiler) |
+| `ferray-python` | ❌ | Blocked by pyo3 (no WASM target) |
 
+### How it works
+
+The fix uses Cargo's target-conditional dependencies:
+
+```toml
+# ferray-ufunc/Cargo.toml
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+core-math = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+libm = { workspace = true }
 ```
-ferray-ufunc → core-math → core-math-sys → bindgen → libclang
-```
 
-`bindgen` generates C FFI bindings at build time and requires `libclang`, which can't resolve for the `wasm32-unknown-unknown` target. This transitively blocks `ferray-stats` and `ferray-linalg`.
-
-**🔄 Partial progress:** `ferray-linalg` now has a wasm32/riscv64 fallback for GEMM using `faer`, removing one architectural barrier — but it still depends on `ferray-ufunc` for elementwise ops.
-
-The fix is ~2 hours of work: add a `wasm` feature to `ferray-ufunc` that swaps `core-math` for the pure-Rust `libm` crate in `cr_math.rs`.
-
-Full details on the [live site](https://riziles.github.io/ferray-wasm-poc).
+And in `cr_math.rs`, the `CrMath` trait has separate impls for native (CORE-MATH, <0.5 ULP) and WASM (libm, ~1-2 ULP — same accuracy NumPy ships with). No feature flags, no build.rs — just `cargo build --target wasm32-unknown-unknown`.
 
 ## Building locally
 
