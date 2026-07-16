@@ -1,75 +1,66 @@
-# Ferray + WASM POC
+# Ferray × WASM — Svelte + Skeleton
 
-A signal processing demo using [Ferray](https://github.com/dollspace-gay/ferray) (the Rust NumPy replacement) compiled to WebAssembly and deployed to GitHub Pages.
+A signal processing demo using [Ferray](https://github.com/dollspace-gay/ferray) (the Rust NumPy replacement) compiled to WebAssembly. Built with **Svelte 5** + **Skeleton v4** (Cerberus theme) + **Tailwind CSS 4**.
 
 **Live site:** [riziles.github.io/ferray-wasm-poc](https://riziles.github.io/ferray-wasm-poc)
 
-## What it does
+## Demos
 
-Four interactive demos running entirely in a ~234 KB WASM binary:
+Seven interactive demos running entirely in a ~524 KB WASM binary:
 
-- **Sum of Squares** — Creates a `ferray::Array<f64, Ix1>`, maps x², and sums
-- **Sine Wave Generator** — Uses `ferray::linspace` + `ferray-ufunc::sin` (SIMD on native, libm on WASM)
-- **Gaussian Blur** — 1D convolution with a Gaussian kernel (adjustable σ)
-- **Statistics** — Uses `ferray-stats::min/max/mean/median/std` — real NumPy-equivalent reductions in the browser
+| Demo | Crates used | Description |
+|---|---|---|
+| 📐 Sum of Squares | `ferray-core` | Interactive `Float64Array` → WASM → Σ x² |
+| 🌊 Sine Wave + Live Stats | `ferray-core`, `ferray-ufunc`, `ferray-stats` | Adjustable wave with live stat badges |
+| 🔵 Gaussian Blur | `ferray-core`, `ferray-ufunc` | 1D convolution, adjustable σ |
+| 📈 FFT Spectrum Analyzer | `ferray-core`, `ferray-fft`, `ferray-window` | Composite signal → windowed FFT → dual-canvas spectrum |
+| 🪟 Window Function Gallery | `ferray-window` | 7 window functions overlaid, adjustable points |
+| 🔥 2D Function Heatmap | `ferray-core`, `ferray-ufunc` | 200×200 canvas `ImageData`, 5 function types |
+| 🧬 Crate Matrix | — | Which ferray workspace crates compile on WASM |
 
 ## Architecture
 
 ```
-JavaScript (browser)
-    ↓
-wasm-bindgen glue
-    ↓
-Rust → ferray-core (arrays) + ferray-ufunc (sin/exp) + ferray-stats (reductions)
-    ↓
-GitHub Actions builds & deploys to GitHub Pages
+JavaScript (Svelte 5 + Skeleton v4)
+    ↓  wasm-bindgen glue
+Rust → ferray-core + ufunc + stats + fft + window
+    ↓  GitHub Actions
+GitHub Pages (pnpm + Vite build)
 ```
-
-## WASM status — SOLVED ✅
-
-The upstream blocker (`ferray-ufunc → core-math → bindgen → libclang`) has been fixed in [riziles/ferray-riz-dev](https://github.com/riziles/ferray-riz-dev/pull/1) by swapping `core-math` for the pure-Rust `libm` crate on `wasm32` targets using target-conditional dependencies (no feature flags needed).
-
-**WASM compatibility after the fix:**
-
-| Crate | Status | Notes |
-|---|---|---|
-| `ferray-core` | ✅ | N-dimensional arrays, creation, indexing |
-| `ferray-ufunc` | ✅ | sin/cos/exp/log/arcsin/… via libm on WASM |
-| `ferray-stats` | ✅ | min/max/mean/median/std/var/quantile/… |
-| `ferray-fft` | ✅ | Always worked (no ufunc dep) |
-| `ferray-linalg` | ✅ | faer sans rayon; GEMM wasm32 fallback |
-| `ferray-random` | ✅ | getrandom + wasm_js |
-| `ferray-polynomial` | ✅ | Unblocked by linalg/ufunc fixes |
-| `ferray-window` | ✅ | Always worked |
-| `ferray-io` | ❌ | Blocked by zstd-sys (needs C compiler) |
-| `ferray-python` | ❌ | Blocked by pyo3 (no WASM target) |
-
-### How it works
-
-The fix uses Cargo's target-conditional dependencies:
-
-```toml
-# ferray-ufunc/Cargo.toml
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-core-math = { workspace = true }
-
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-libm = { workspace = true }
-```
-
-And in `cr_math.rs`, the `CrMath` trait has separate impls for native (CORE-MATH, <0.5 ULP) and WASM (libm, ~1-2 ULP — same accuracy NumPy ships with). No feature flags, no build.rs — just `cargo build --target wasm32-unknown-unknown`.
 
 ## Building locally
 
 ```bash
+# Rust + WASM
 rustup target add wasm32-unknown-unknown
 cargo install wasm-bindgen-cli
 cargo build --target wasm32-unknown-unknown --release
-wasm-bindgen --target web --no-typescript --out-dir web/pkg \
+wasm-bindgen --target web --no-typescript --out-dir svelte-app/src/lib/wasm \
   target/wasm32-unknown-unknown/release/ferray_wasm_poc.wasm
-# Serve web/ with any HTTP server
+
+# Frontend
+cd svelte-app
+pnpm install
+pnpm run dev    # dev server
+pnpm run build  # production build
 ```
+
+## WASM crate compatibility
+
+| Crate | WASM? | Notes |
+|---|---|---|
+| `ferray-core` | ✅ | N-dimensional arrays |
+| `ferray-ufunc` | ✅ | Trig, exp/log via libm on WASM |
+| `ferray-stats` | ✅ | min/max/mean/median/std |
+| `ferray-fft` | ✅ | Real FFT |
+| `ferray-window` | ✅ | Hanning, Hamming, Blackman, etc. |
+| `ferray-linalg` | ✅ | Matrix ops (available, not yet demoed) |
+| `ferray-random` | ✅ | Distributions (available, not yet demoed) |
+| `ferray-io` | ❌ | Blocked by zstd-sys |
+| `ferray-python` | ❌ | Blocked by pyo3 |
+
+The WASM fix uses target-conditional `libm` in [riziles/ferray-riz-dev](https://github.com/riziles/ferray-riz-dev): on `wasm32`, `core-math` is swapped for pure-Rust `libm` (~1-2 ULP, same as NumPy). No feature flags, no build.rs — just `cargo build --target wasm32-unknown-unknown`.
 
 ## Built by
 
-🤖 This entire project — Rust code, WASM build pipeline, GitHub Actions deploy, and the page itself — was built by a [pi](https://github.com/earendil-works/pi-coding-agent) coding agent running DeepSeek V4 Pro.
+🤖 This entire project — Rust code, WASM pipeline, Svelte component architecture, CI/CD — was built by a [pi](https://github.com/earendil-works/pi-coding-agent) coding agent.
