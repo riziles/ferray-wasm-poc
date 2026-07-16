@@ -31,17 +31,17 @@ GitHub Pages (pnpm + Vite build)
 ## Building locally
 
 ```bash
-# Rust + WASM
+# One-time: install Rust + WASM tooling
 rustup target add wasm32-unknown-unknown
 cargo install wasm-bindgen-cli
-cargo build --target wasm32-unknown-unknown --release
-wasm-bindgen --target web --no-typescript --out-dir svelte-app/src/lib/wasm \
-  target/wasm32-unknown-unknown/release/ferray_wasm_poc.wasm
+
+# Build WASM (needed before first run, and after any Rust change)
+./scripts/build-wasm.sh
 
 # Frontend
 cd svelte-app
 pnpm install
-pnpm run dev    # dev server
+pnpm run dev    # dev server (WASM must already be built)
 pnpm run build  # production build
 ```
 
