@@ -162,6 +162,12 @@ pub fn window_fn(window_type: &str, size: usize) -> Result<Vec<f64>, JsValue> {
             .map_err(|e| JsValue::from_str(&format!("{:?}", e)))?,
         "bartlett" => ferray_window::bartlett(size)
             .map_err(|e| JsValue::from_str(&format!("{:?}", e)))?,
+        "cosine" => ferray_window::cosine(size)
+            .map_err(|e| JsValue::from_str(&format!("{:?}", e)))?,
+        "nuttall" => ferray_window::nuttall(size)
+            .map_err(|e| JsValue::from_str(&format!("{:?}", e)))?,
+        "parzen" => ferray_window::parzen(size)
+            .map_err(|e| JsValue::from_str(&format!("{:?}", e)))?,
         _ => return Err(JsValue::from_str(&format!("Unknown window: {}", window_type))),
     };
     Ok(result.iter().copied().collect())
