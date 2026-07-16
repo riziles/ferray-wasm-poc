@@ -28,17 +28,24 @@ jobs:
           cargo build --target wasm32-unknown-unknown --release
           wasm-bindgen --target web --no-typescript --out-dir svelte-app/src/lib/wasm target/wasm32-unknown-unknown/release/ferray_wasm_poc.wasm
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: 'pnpm'
+          cache-dependency-path: svelte-app/pnpm-lock.yaml
 
       - name: Install JS deps
-        run: npm ci
+        run: pnpm install --frozen-lockfile
         working-directory: svelte-app
 
       - name: Build Svelte app
-        run: npm run build
+        run: pnpm run build
         working-directory: svelte-app
 
       - name: Setup Pages
