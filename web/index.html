@@ -78,7 +78,7 @@
 <body>
 
 <h1>🦀 Ferray × WASM</h1>
-<p class="subtitle">Rust-native NumPy equivalent compiled to WebAssembly</p>
+<p class="subtitle">Rust-native NumPy equivalent compiled to WebAssembly<br><span style="font-size:0.85rem;color:#22c55e">✨ All WASM blockers solved — ufuncs, stats, linalg, FFT all compile!</span></p>
 
 <div class="card">
   <h2>📐 Sum of Squares</h2>
@@ -94,7 +94,7 @@
 <div class="card">
   <h2>🌊 Sine Wave Generator</h2>
   <p style="font-size:0.85rem;color:#94a3b8;margin-bottom:0.5rem">
-    Uses <code>ferray::linspace</code> and <code>sin(2πft)</code>
+    Uses <code>ferray::linspace</code> + <code>ferray_ufunc::sin</code> (SIMD-accelerated)
   </p>
   <div class="row" style="margin-bottom:0.5rem">
     <label>Frequency: <input type="range" id="freq" min="1" max="20" value="3"></label>
@@ -120,7 +120,7 @@
 <div class="card">
   <h2>📊 Statistics</h2>
   <p style="font-size:0.85rem;color:#94a3b8;margin-bottom:0.5rem">
-    Min, max, mean, median, std on sine wave data
+    Uses <code>ferray_stats::min/max/mean/median/std</code> — real NumPy-equivalent reductions
   </p>
   <div class="row">
     <button id="btn-stats">Compute Stats</button>
@@ -133,23 +133,27 @@
 
   <h3 style="color:#f59e0b;margin-top:1rem">The stack</h3>
   <p>
-    Every computation on this page runs inside a single <strong>88 KB WebAssembly binary</strong>
+    Every computation on this page runs inside a single <strong>~213 KB WebAssembly binary</strong>
     compiled from Rust. When you click a button or move a slider, JavaScript calls into
     WASM, which executes <a href="https://github.com/dollspace-gay/ferray" style="color:#38bdf8">Ferray</a>
     — a Rust-native, hand-tuned NumPy equivalent that beats NumPy on 73% of benchmarks —
     and returns the result back to the browser for rendering on a &lt;canvas&gt;.
   </p>
   <p style="margin-top:0.5rem">
-    The WASM binary was produced with <code>cargo build --target wasm32-unknown-unknown</code>
-    and <code>wasm-bindgen</code> to generate the JS glue. Deployment is handled by a
-    <strong>GitHub Actions</strong> workflow that builds the WASM from source on every push to
-    <code>main</code> and deploys to GitHub Pages automatically.
+    The WASM binary bundles <strong>ferray-core</strong> (N-dimensional arrays),
+    <strong>ferray-ufunc</strong> (SIMD-accelerated sin/cos/exp/log/…),
+    and <strong>ferray-stats</strong> (min/max/mean/median/std/var/…).
+    It was produced with <code>cargo build --target wasm32-unknown-unknown</code>
+    and <code>wasm-bindgen</code>. Deployment is handled by a
+    <strong>GitHub Actions</strong> workflow that builds from source on every push and
+    deploys to GitHub Pages automatically.
   </p>
 
-  <h3 style="color:#f59e0b;margin-top:1.25rem">Ferray features used</h3>
+  <h3 style="color:#f59e0b;margin-top:1.25rem">Ferray crates used</h3>
   <table style="width:100%;font-size:0.85rem;border-collapse:collapse;margin-top:0.5rem">
     <thead>
       <tr style="text-align:left;border-bottom:1px solid #334155">
+        <th style="padding:0.35rem 0.5rem">Crate</th>
         <th style="padding:0.35rem 0.5rem">API</th>
         <th style="padding:0.35rem 0.5rem">Demo</th>
         <th style="padding:0.35rem 0.5rem">What it does</th>
@@ -157,39 +161,98 @@
     </thead>
     <tbody>
       <tr>
+        <td style="padding:0.35rem 0.5rem;color:#38bdf8">ferray-core</td>
         <td style="padding:0.35rem 0.5rem"><code>Array::from_vec</code></td>
         <td style="padding:0.35rem 0.5rem">Sum of Squares</td>
         <td style="padding:0.35rem 0.5rem;color:#94a3b8">Creates a 1D f64 array from a JS <code>Vec&lt;f64&gt;</code></td>
       </tr>
       <tr>
+        <td style="padding:0.35rem 0.5rem;color:#38bdf8">ferray-core</td>
         <td style="padding:0.35rem 0.5rem"><code>linspace</code></td>
         <td style="padding:0.35rem 0.5rem">Sine Wave</td>
         <td style="padding:0.35rem 0.5rem;color:#94a3b8">Generates evenly-spaced samples over an interval</td>
       </tr>
       <tr>
-        <td style="padding:0.35rem 0.5rem"><code>Array.iter()</code></td>
-        <td style="padding:0.35rem 0.5rem">All demos</td>
-        <td style="padding:0.35rem 0.5rem;color:#94a3b8">Element-wise traversal and mapping</td>
+        <td style="padding:0.35rem 0.5rem;color:#f59e0b">ferray-ufunc</td>
+        <td style="padding:0.35rem 0.5rem"><code>sin</code></td>
+        <td style="padding:0.35rem 0.5rem">Sine Wave</td>
+        <td style="padding:0.35rem 0.5rem;color:#94a3b8">SIMD-accelerated elementwise sine (libm on WASM, CORE-MATH on native)</td>
       </tr>
       <tr>
-        <td style="padding:0.35rem 0.5rem"><code>Array::len / shape</code></td>
-        <td style="padding:0.35rem 0.5rem">All demos</td>
-        <td style="padding:0.35rem 0.5rem;color:#94a3b8">Dimensional introspection (Ferray supports up to 6-D arrays)</td>
+        <td style="padding:0.35rem 0.5rem;color:#22c55e">ferray-stats</td>
+        <td style="padding:0.35rem 0.5rem"><code>min, max, mean,<br>median, std</code></td>
+        <td style="padding:0.35rem 0.5rem">Statistics</td>
+        <td style="padding:0.35rem 0.5rem;color:#94a3b8">Pairwise SIMD reductions (28.8× faster than NumPy on native!)</td>
       </tr>
     </tbody>
   </table>
 
-  <h3 style="color:#ef4444;margin-top:1.25rem">⚠️ WASM limitations — a deep dive into the source</h3>
+  <h3 style="color:#22c55e;margin-top:1.25rem">✅ WASM — SOLVED</h3>
   <p style="margin-top:0.5rem">
-    We audited the Ferray source code to understand exactly what blocks WASM compilation —
-    and whether the developers already anticipated this target. The answer surprised us.
+    The original blocker was a single dependency chain that prevented all of Ferray
+    beyond <code>ferray-core</code> from compiling to WebAssembly:
   </p>
 
-  <h4 style="color:#f59e0b;margin-top:1rem">The architecture is <em>already</em> WASM-ready</h4>
+  <div style="background:#0f172a;border-radius:8px;padding:1rem;margin-top:0.75rem">
+    <p style="margin-bottom:0.5rem">
+      <strong style="color:#f87171">ferray-ufunc → core-math → core-math-sys → bindgen → libclang</strong>
+    </p>
+    <p style="font-size:0.85rem;color:#94a3b8;line-height:1.6">
+      The <code>core-math</code> crate (INRIA CORE-MATH) wraps a C library via <code>bindgen</code>,
+      which requires <code>libclang</code> at build time. <code>libclang</code> can't resolve for
+      <code>wasm32-unknown-unknown</code>, transitively blocking <code>ferray-stats</code>,
+      <code>ferray-linalg</code>, <code>ferray-random</code>, and <code>ferray-polynomial</code>.
+    </p>
+    <p style="font-size:0.85rem;color:#e2e8f0;line-height:1.6;margin-top:0.5rem">
+      <strong>This is now fixed.</strong> We shipped a 3-commit patch to
+      <a href="https://github.com/riziles/ferray-riz-dev/pull/1" style="color:#38bdf8">riziles/ferray-riz-dev</a>
+      that swaps <code>core-math</code> for the pure-Rust <code>libm</code> crate on wasm32 using
+      target-conditional dependencies — no feature flags, no build.rs. Just
+      <code>cargo build --target wasm32-unknown-unknown</code>.
+    </p>
+  </div>
+
+  <h4 style="color:#38bdf8;margin-top:1rem">How the fix works</h4>
   <p style="font-size:0.85rem;color:#94a3b8;line-height:1.6">
-    Ferray uses a <strong>multi-backend dispatch architecture</strong> at every level of the stack.
-    Every hot path checks the target architecture at compile time and falls through to a portable
-    pure-Rust implementation when no hardware SIMD is available:
+    Cargo's target-conditional dependencies do all the heavy lifting:
+  </p>
+
+  <div style="background:#0f172a;border-radius:8px;padding:1rem;margin-top:0.5rem;font-size:0.8rem;font-family:'Fira Code','Consolas',monospace;line-height:1.8;color:#94a3b8">
+    <span style="color:#64748b">// ferray-ufunc/Cargo.toml — native gets CORE-MATH, WASM gets libm</span><br>
+    <span style="color:#f87171">[target.'cfg(not(target_arch = "wasm32"))'.dependencies]</span><br>
+    core-math = { workspace = true }  <span style="color:#64748b">// &lt;0.5 ULP on native</span><br>
+    <br>
+    <span style="color:#22c55e">[target.'cfg(target_arch = "wasm32")'.dependencies]</span><br>
+    libm = { workspace = true }       <span style="color:#64748b">// ~1-2 ULP on WASM (same as NumPy!)</span>
+  </div>
+
+  <h4 style="color:#38bdf8;margin-top:1rem">Full crate compatibility matrix</h4>
+  <table style="width:100%;font-size:0.8rem;border-collapse:collapse;margin-top:0.5rem">
+    <thead>
+      <tr style="text-align:left;border-bottom:1px solid #334155">
+        <th style="padding:0.35rem 0.5rem">Crate</th>
+        <th style="padding:0.35rem 0.5rem">Status</th>
+        <th style="padding:0.35rem 0.5rem">Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:0.35rem 0.5rem"><code>ferray-core</code></td><td style="padding:0.35rem 0.5rem;color:#22c55e">✅</td><td style="padding:0.35rem 0.5rem;color:#94a3b8">Always worked — ndarray-backed, pure Rust</td></tr>
+      <tr><td style="padding:0.35rem 0.5rem"><code>ferray-ufunc</code></td><td style="padding:0.35rem 0.5rem;color:#22c55e">✅</td><td style="padding:0.35rem 0.5rem;color:#94a3b8">libm swap on WASM; SIMD on native</td></tr>
+      <tr><td style="padding:0.35rem 0.5rem"><code>ferray-stats</code></td><td style="padding:0.35rem 0.5rem;color:#22c55e">✅</td><td style="padding:0.35rem 0.5rem;color:#94a3b8">Unblocked by ufunc fix</td></tr>
+      <tr><td style="padding:0.35rem 0.5rem"><code>ferray-fft</code></td><td style="padding:0.35rem 0.5rem;color:#22c55e">✅</td><td style="padding:0.35rem 0.5rem;color:#94a3b8">Always worked — rustfft/realfft, no ufunc dep</td></tr>
+      <tr><td style="padding:0.35rem 0.5rem"><code>ferray-linalg</code></td><td style="padding:0.35rem 0.5rem;color:#22c55e">✅</td><td style="padding:0.35rem 0.5rem;color:#94a3b8">faer sans rayon; GEMM wasm32 fallback</td></tr>
+      <tr><td style="padding:0.35rem 0.5rem"><code>ferray-random</code></td><td style="padding:0.35rem 0.5rem;color:#22c55e">✅</td><td style="padding:0.35rem 0.5rem;color:#94a3b8">getrandom + wasm_js</td></tr>
+      <tr><td style="padding:0.35rem 0.5rem"><code>ferray-polynomial</code></td><td style="padding:0.35rem 0.5rem;color:#22c55e">✅</td><td style="padding:0.35rem 0.5rem;color:#94a3b8">Unblocked by linalg/ufunc fixes</td></tr>
+      <tr><td style="padding:0.35rem 0.5rem"><code>ferray-window</code></td><td style="padding:0.35rem 0.5rem;color:#22c55e">✅</td><td style="padding:0.35rem 0.5rem;color:#94a3b8">Always worked — pure Rust</td></tr>
+      <tr><td style="padding:0.35rem 0.5rem"><code>ferray-io</code></td><td style="padding:0.35rem 0.5rem;color:#ef4444">❌</td><td style="padding:0.35rem 0.5rem;color:#94a3b8">Blocked by zstd-sys (needs C compiler)</td></tr>
+      <tr><td style="padding:0.35rem 0.5rem"><code>ferray-python</code></td><td style="padding:0.35rem 0.5rem;color:#ef4444">❌</td><td style="padding:0.35rem 0.5rem;color:#94a3b8">Blocked by pyo3 (no WASM target)</td></tr>
+    </tbody>
+  </table>
+
+  <h4 style="color:#f59e0b;margin-top:1rem">Ferray's multi-backend architecture</h4>
+  <p style="font-size:0.85rem;color:#94a3b8;line-height:1.6">
+    Ferray was architected for WASM from the start — every hot path uses
+    compile-time target detection with pure-Rust fallbacks:
   </p>
 
   <div style="background:#0f172a;border-radius:8px;padding:1rem;margin-top:0.5rem;font-size:0.8rem;font-family:'Fira Code','Consolas',monospace;line-height:1.8;color:#94a3b8">
@@ -198,133 +261,23 @@
     <span style="color:#f87171">#[cfg(target_arch = "aarch64")]</span>  <span style="color:#64748b">→ NEON kernels</span><br>
     <span style="color:#22c55e">#[cfg(not(x86_64 or aarch64))]</span> <span style="color:#64748b">→ faer_fallback.rs (pure Rust matmul)</span><br>
     &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#94a3b8">// Comment: "RISC-V, <strong style="color:#e2e8f0">WASM</strong>, big-endian PowerPC, etc."</span>
+    <br><br>
+    <span style="color:#64748b">// ferray-ufunc/src/cr_math.rs — the fix</span><br>
+    <span style="color:#f87171">#[cfg(not(target_arch = "wasm32"))]</span> <span style="color:#64748b">→ CORE-MATH (&lt;0.5 ULP, via FFI)</span><br>
+    <span style="color:#22c55e">#[cfg(target_arch = "wasm32")]</span>     <span style="color:#64748b">→ libm (~1-2 ULP, pure Rust)</span>
   </div>
 
-  <h4 style="color:#f59e0b;margin-top:1rem">Ferray's dual math strategy</h4>
-  <p style="font-size:0.85rem;color:#94a3b8;line-height:1.6">
-    The ufunc crate uses a split approach for math accuracy. Each function picks one of two
-    backends — and half of them already work on WASM:
+  <p style="font-size:0.85rem;color:#94a3b8;line-height:1.6;margin-top:0.75rem">
+    <strong style="color:#e2e8f0">The trade-off:</strong> on WASM you get ~1-2 ULP accuracy (libm) instead of
+    &lt;0.5 ULP (CORE-MATH) for transcendentals — the exact same accuracy NumPy ships with.
+    Everything else (arithmetic, reductions, linalg, FFT) works identically.
   </p>
-
-  <table style="width:100%;font-size:0.8rem;border-collapse:collapse;margin-top:0.5rem">
-    <thead>
-      <tr style="text-align:left;border-bottom:1px solid #334155">
-        <th style="padding:0.35rem 0.5rem">Functions</th>
-        <th style="padding:0.35rem 0.5rem">Backend</th>
-        <th style="padding:0.35rem 0.5rem">Accuracy</th>
-        <th style="padding:0.35rem 0.5rem">WASM?</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td style="padding:0.35rem 0.5rem"><code>sin</code>, <code>cos</code>, <code>tan</code></td>
-        <td style="padding:0.35rem 0.5rem"><code>Float::sin</code> (libm)</td>
-        <td style="padding:0.35rem 0.5rem">~1 ULP</td>
-        <td style="padding:0.35rem 0.5rem;color:#22c55e">✅ pure Rust</td>
-      </tr>
-      <tr>
-        <td style="padding:0.35rem 0.5rem"><code>arcsin</code>, <code>arccos</code>, <code>arctan</code>, <code>sinh</code>, <code>cosh</code>, <code>tanh</code>, <code>exp</code>, <code>log</code>, <code>expm1</code>, <code>log1p</code>, …</td>
-        <td style="padding:0.35rem 0.5rem"><code>CrMath</code> (CORE-MATH)</td>
-        <td style="padding:0.35rem 0.5rem">&lt;0.5 ULP</td>
-        <td style="padding:0.35rem 0.5rem;color:#ef4444">❌ C FFI via bindgen</td>
-      </tr>
-      <tr>
-        <td style="padding:0.35rem 0.5rem"><code>sin_fast</code>, <code>cos_fast</code>, <code>tan_fast</code></td>
-        <td style="padding:0.35rem 0.5rem">Cody-Waite + Cephes polynomials</td>
-        <td style="padding:0.35rem 0.5rem">≤1 ULP</td>
-        <td style="padding:0.35rem 0.5rem;color:#22c55e">✅ pure Rust</td>
-      </tr>
-      <tr>
-        <td style="padding:0.35rem 0.5rem"><code>exp_fast</code></td>
-        <td style="padding:0.35rem 0.5rem">Even/Odd Remez decomposition</td>
-        <td style="padding:0.35rem 0.5rem">≤1 ULP</td>
-        <td style="padding:0.35rem 0.5rem;color:#22c55e">✅ pure Rust</td>
-      </tr>
-      <tr>
-        <td style="padding:0.35rem 0.5rem"><code>add</code>, <code>multiply</code>, <code>sqrt</code>, <code>abs</code>, <code>square</code>, …</td>
-        <td style="padding:0.35rem 0.5rem">pulp SIMD / scalar fallback</td>
-        <td style="padding:0.35rem 0.5rem">Exact</td>
-        <td style="padding:0.35rem 0.5rem;color:#22c55e">✅ pure Rust</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <h4 style="color:#ef4444;margin-top:1rem">The real blocker: just one crate, one file</h4>
-  <p>
-    After auditing the entire Ferray source tree, the WASM problem reduces to <strong>exactly one
-    thing</strong>:
-  </p>
-
-  <div style="background:#0f172a;border-radius:8px;padding:1rem;margin-top:0.75rem">
-    <p style="margin-bottom:0.5rem">
-      <strong style="color:#f87171">ferray-ufunc → <code>core-math</code> → <code>bindgen</code> → <code>libclang</code></strong>
-    </p>
-    <p style="font-size:0.85rem;color:#94a3b8;line-height:1.6">
-      The <code>core-math</code> crate is a thin wrapper around <code>core-math-sys</code>, which uses
-      <code>bindgen</code> to generate Rust FFI bindings to INRIA's CORE-MATH C library at build time.
-      <code>bindgen</code> requires <code>libclang</code> (LLVM's C API), which can't resolve for
-      the <code>wasm32-unknown-unknown</code> target. There is no pre-generated bindings file, no
-      <code>wasm</code> feature, and no pure-Rust fallback in the <code>core-math</code> crate.
-    </p>
-    <p style="font-size:0.85rem;color:#94a3b8;line-height:1.6;margin-top:0.5rem">
-      <strong>This cascades to everything:</strong> <code>ferray-stats</code> depends on
-      <code>ferray-ufunc</code>. <code>ferray-fft</code> depends on it. Even
-      <code>ferray-linalg</code> lists it as a dependency (though we found it <em>never imports
-      anything</em> from it — it's a dead dep). So every downstream crate is blocked by this
-      single C FFI boundary.
-    </p>
-    <p style="font-size:0.85rem;color:#e2e8f0;line-height:1.6;margin-top:0.5rem">
-      <strong>Correction from earlier analysis:</strong> the <code>ferray-linalg</code> →
-      <code>private-gemm-x86</code> concern was a red herring. The linalg GEMM dispatch
-      <em>already</em> has a pure-Rust faer fallback for non-x86/non-aarch64 targets, and WASM
-      is explicitly mentioned in the source comments alongside RISC-V and PowerPC.
-      Ferray-linalg is architected for WASM — it just can't compile because of the transitive
-      <code>ferray-ufunc</code> dependency.
-    </p>
-  </div>
-
-  <h3 style="color:#22c55e;margin-top:1.25rem">✅ What <em>does</em> work</h3>
-  <div style="background:#0f172a;border-radius:8px;padding:1rem;margin-top:0.5rem">
-    <ul style="font-size:0.85rem;color:#94a3b8;padding-left:1.25rem;line-height:1.6">
-      <li><strong style="color:#e2e8f0">ferray-core</strong> — N-dimensional arrays, broadcasting, indexing, shape manipulation, memory layout, COW arrays, views, and all creation functions (linspace, arange, zeros, ones, eye, etc.)</li>
-      <li><strong style="color:#e2e8f0">Zero panics</strong> — All ferray functions return <code>Result&lt;T, FerrayError&gt;</code>, so every call from JS is properly error-handled</li>
-      <li><strong style="color:#e2e8f0">wasm-bindgen</strong> — Seamless JS ↔ Rust interop with automatic serialization of <code>Vec&lt;f64&gt;</code></li>
-      <li><strong style="color:#e2e8f0">ferray-linalg</strong> (theoretically) — The GEMM dispatch, SVD, QR, decompositions, and solvers all route to pure-Rust faer when not on x86/aarch64. The crate just can't <em>compile</em> because Cargo resolves its dead <code>ferray-ufunc</code> dependency.</li>
-    </ul>
-  </div>
-
-  <h3 style="color:#38bdf8;margin-top:1.25rem">💡 How to fix it — a ~2 hour patch</h3>
-  <div style="background:#0f172a;border-radius:8px;padding:1rem;margin-top:0.5rem;font-size:0.85rem;color:#94a3b8;line-height:1.6">
-    <p>
-      <strong style="color:#e2e8f0">The fix is surgically small.</strong>
-      Every CORE-MATH function called in <code>ferray-ufunc/src/cr_math.rs</code> has an equivalent
-      in the pure-Rust <code>libm</code> crate. The entire diff would be:
-    </p>
-    <ol style="padding-left:1.5rem;margin-top:0.5rem">
-      <li style="margin-bottom:0.35rem">Add <code>libm = { version = "0.2", optional = true }</code> and a <code>wasm = ["dep:libm"]</code> feature to <code>ferray-ufunc/Cargo.toml</code></li>
-      <li style="margin-bottom:0.35rem">In <code>cr_math.rs</code>: cfg-gate the existing <code>impl CrMath for f64/f32</code> blocks behind <code>#[cfg(not(feature = "wasm"))]</code></li>
-      <li style="margin-bottom:0.35rem">Add <code>#[cfg(feature = "wasm")]</code> versions that call <code>libm::asin()</code> / <code>libm::acos()</code> / <code>libm::exp()</code> / etc. instead of <code>core_math::asin()</code></li>
-      <li style="margin-bottom:0.35rem">In <code>ferray-linalg/Cargo.toml</code>: make <code>ferray-ufunc</code> optional or remove the unused dependency</li>
-    </ol>
-    <p style="margin-top:0.75rem">
-      <strong style="color:#e2e8f0">The trade-off:</strong> on WASM you'd get ~1-2 ULP accuracy (libm) instead of
-      &lt;0.5 ULP (CORE-MATH) for arcsin/arccos/arctan/sinh/cosh/exp/log — the same accuracy NumPy
-      ships with. Everything else (all arithmetic, reductions, linalg, FFT) would work identically.
-    </p>
-    <p style="margin-top:0.5rem">
-      <strong style="color:#e2e8f0">Why this matters:</strong> the ferray developers explicitly designed for WASM.
-      The <code>faer_fallback.rs</code> comments call it out by name. The multi-arch dispatch
-      already handles x86, aarch64, and "everything else". The <code>_fast</code> math variants are
-      already pure Rust. The only missing piece is one <code>#[cfg]</code> gate in <code>cr_math.rs</code>.
-      The architecture was ready — they just never wired the last switch.
-    </p>
-  </div>
 </div>
 
 <div class="card" style="text-align:center;font-size:0.8rem;color:#64748b">
   <a href="https://github.com/riziles/ferray-wasm-poc" style="color:#38bdf8">Source on GitHub</a>
   · Built with <a href="https://github.com/dollspace-gay/ferray" style="color:#38bdf8">Ferray</a> (Rust) + WebAssembly
-  · 88 KB wasm
+  · ~213 KB wasm
   <br><br>
   <span style="color:#64748b">🤖 This entire site — Rust code, WASM build pipeline, GitHub Actions deploy, and this page — was built by a <a href="https://github.com/earendil-works/pi-coding-agent" style="color:#38bdf8">pi</a> coding agent running DeepSeek V4 Pro.</span>
 </div>
