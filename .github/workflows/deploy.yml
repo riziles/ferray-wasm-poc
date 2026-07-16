@@ -15,15 +15,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Detect changed paths
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            rust:
+              - 'src/**'
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+
       - name: Install Rust
+        if: steps.changes.outputs.rust == 'true'
         run: |
           rustup update stable
           rustup target add wasm32-unknown-unknown
 
+      - name: Cache Rust build
+        if: steps.changes.outputs.rust == 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
+
       - name: Install wasm-bindgen-cli
+        if: steps.changes.outputs.rust == 'true'
         run: cargo install wasm-bindgen-cli --version 0.2.125
 
       - name: Build WASM
+        if: steps.changes.outputs.rust == 'true'
         run: |
           cargo build --target wasm32-unknown-unknown --release
           wasm-bindgen --target web --no-typescript --out-dir svelte-app/src/lib/wasm target/wasm32-unknown-unknown/release/ferray_wasm_poc.wasm
