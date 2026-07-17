@@ -6,36 +6,33 @@
   const getWasm = getContext<() => WasmApi>('wasm');
   const wasm = $derived(getWasm());
 
-  const rustCode = `<code>use ferray::Array1;
+  const rustCode = `use ferray::Array1;
 use ferray_fft::{rfft, FftNorm};
 use ferray_window::hanning;
 use num_complex::Complex;
 
 #[wasm_bindgen]
-pub fn fft_magnitude(data: &[f64]) -> Vec&lt;f64&gt; {
+pub fn fft_magnitude(data: &[f64]) -> Vec<f64> {
     let arr = Array1::from_vec(data.to_vec());
     let window = hanning(data.len());
     let windowed = &arr * &window;
-
     let spectrum = rfft(&windowed, None, None, FftNorm::Backward)
         .unwrap();
-
-    // Compute magnitudes
     spectrum.iter()
-        .map(|c: &Complex&lt;f64&gt;| c.norm())
+        .map(|c: &Complex<f64>| c.norm())
         .collect()
 }
 
 #[wasm_bindgen]
 pub fn composite_signal(
     freqs: &[f64], amps: &[f64], n: usize
-) -> Vec&lt;f64&gt; {
+) -> Vec<f64> {
     let t = Array1::linspace(0.0, 1.0, n);
     freqs.iter().zip(amps.iter()).fold(
         Array1::zeros(n), |acc, (&f, &a)|
             acc + a * t.mapv(|x| (2.0 * PI * f * x).sin())
     ).into_raw_vec()
-}</code>`;
+}`;
 </script>
 
 <div class="container mx-auto px-4 py-8 max-w-5xl space-y-8">
@@ -62,7 +59,7 @@ pub fn composite_signal(
     </div>
 
     <h3 class="h3 mt-4">Rust implementation</h3>
-    <pre class="code-block p-4 overflow-x-auto text-xs">{@html rustCode}</pre>
+    <pre class="code-block p-4 overflow-x-auto text-xs"><code>{rustCode}</code></pre>
 
     <h3 class="h3 mt-4">Windowing and spectral leakage</h3>
     <p class="text-surface-400 text-sm">

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { getContext } from 'svelte';
+  import { base } from '$app/paths';
   import type { WasmApi } from '$lib/wasm/loader';
   import Hero from '$lib/Hero.svelte';
   import SumOfSquares from '$lib/SumOfSquares.svelte';
@@ -18,42 +19,42 @@
   <Hero />
 
   <section class="group/demo">
-    <a href="/ferray-wasm-poc/sum-of-squares" data-sveltekit-prefetch class="block hover:text-primary-400 transition-colors">
+    <a href="{base}/sum-of-squares" data-sveltekit-prefetch class="block hover:text-primary-400 transition-colors">
       <h2 class="h2 mb-4 cursor-pointer">📐 Sum of Squares</h2>
     </a>
     <SumOfSquares {wasm} />
   </section>
 
   <section class="group/demo">
-    <a href="/ferray-wasm-poc/sine-wave" data-sveltekit-prefetch class="block hover:text-primary-400 transition-colors">
+    <a href="{base}/sine-wave" data-sveltekit-prefetch class="block hover:text-primary-400 transition-colors">
       <h2 class="h2 mb-4 cursor-pointer">🌊 Sine Wave + Live Stats</h2>
     </a>
     <WaveAndStats {wasm} />
   </section>
 
   <section class="group/demo">
-    <a href="/ferray-wasm-poc/gaussian-blur" data-sveltekit-prefetch class="block hover:text-primary-400 transition-colors">
+    <a href="{base}/gaussian-blur" data-sveltekit-prefetch class="block hover:text-primary-400 transition-colors">
       <h2 class="h2 mb-4 cursor-pointer">🔵 Gaussian Blur (1D Convolution)</h2>
     </a>
     <GaussianBlur {wasm} />
   </section>
 
   <section class="group/demo">
-    <a href="/ferray-wasm-poc/fft" data-sveltekit-prefetch class="block hover:text-primary-400 transition-colors">
+    <a href="{base}/fft" data-sveltekit-prefetch class="block hover:text-primary-400 transition-colors">
       <h2 class="h2 mb-4 cursor-pointer">📈 FFT Spectrum Analyzer</h2>
     </a>
     <FftAnalyzer {wasm} />
   </section>
 
   <section class="group/demo">
-    <a href="/ferray-wasm-poc/window-functions" data-sveltekit-prefetch class="block hover:text-primary-400 transition-colors">
+    <a href="{base}/window-functions" data-sveltekit-prefetch class="block hover:text-primary-400 transition-colors">
       <h2 class="h2 mb-4 cursor-pointer">🪟 Window Function Gallery</h2>
     </a>
     <WindowGallery {wasm} />
   </section>
 
   <section class="group/demo">
-    <a href="/ferray-wasm-poc/heatmap" data-sveltekit-prefetch class="block hover:text-primary-400 transition-colors">
+    <a href="{base}/heatmap" data-sveltekit-prefetch class="block hover:text-primary-400 transition-colors">
       <h2 class="h2 mb-4 cursor-pointer">🔥 2D Function Heatmap</h2>
     </a>
     <Heatmap {wasm} />

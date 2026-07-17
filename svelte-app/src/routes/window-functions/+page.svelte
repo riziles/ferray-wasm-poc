@@ -6,12 +6,12 @@
   const getWasm = getContext<() => WasmApi>('wasm');
   const wasm = $derived(getWasm());
 
-  const rustCode = `<code>use ferray::Array1;
+  const rustCode = `use ferray::Array1;
 use ferray_window;
 
 #[wasm_bindgen]
-pub fn window_fn(name: &str, size: usize) -> Vec&lt;f64&gt; {
-    let arr: Array1&lt;f64&gt; = match name {
+pub fn window_fn(name: &str, size: usize) -> Vec<f64> {
+    let arr: Array1<f64> = match name {
         "hanning" => ferray_window::hanning(size),
         "hamming" => ferray_window::hamming(size),
         "blackman" => ferray_window::blackman(size),
@@ -22,7 +22,7 @@ pub fn window_fn(name: &str, size: usize) -> Vec&lt;f64&gt; {
         _ => panic!("Unknown window: {name}"),
     };
     arr.into_raw_vec()
-}</code>`;
+}`;
 </script>
 
 <div class="container mx-auto px-4 py-8 max-w-5xl space-y-8">
@@ -76,7 +76,7 @@ pub fn window_fn(name: &str, size: usize) -> Vec&lt;f64&gt; {
     </div>
 
     <h3 class="h3 mt-4">Rust implementation</h3>
-    <pre class="code-block p-4 overflow-x-auto text-xs">{@html rustCode}</pre>
+    <pre class="code-block p-4 overflow-x-auto text-xs"><code>{rustCode}</code></pre>
 
     <h3 class="h3 mt-4">When to use which window</h3>
     <ul class="list-disc list-inside text-sm text-surface-400 space-y-1">

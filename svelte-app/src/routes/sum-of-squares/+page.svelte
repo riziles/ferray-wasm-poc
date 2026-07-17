@@ -6,13 +6,13 @@
   const getWasm = getContext<() => WasmApi>('wasm');
   const wasm = $derived(getWasm());
 
-  const rustCode = `<code>use ferray::Array1;
+  const rustCode = `use ferray::Array1;
 
 #[wasm_bindgen]
 pub fn sum_of_squares(input: &[f64]) -> f64 {
     let arr = Array1::from_vec(input.to_vec());
     arr.mapv(|x| x.powi(2)).sum()
-}</code>`;
+}`;
 </script>
 
 <div class="container mx-auto px-4 py-8 max-w-5xl space-y-8">
@@ -42,7 +42,7 @@ pub fn sum_of_squares(input: &[f64]) -> f64 {
     </p>
 
     <h3 class="h3 mt-4">Rust implementation</h3>
-    <pre class="code-block p-4 overflow-x-auto text-xs">{@html rustCode}</pre>
+    <pre class="code-block p-4 overflow-x-auto text-xs"><code>{rustCode}</code></pre>
 
     <h3 class="h3 mt-4">Performance note</h3>
     <p class="text-surface-400 text-sm">
