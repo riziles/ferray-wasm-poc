@@ -13,10 +13,10 @@
   </p>
   <div class="flex flex-wrap gap-2 justify-center pt-2">
     <a href="https://github.com/dollspace-gay/ferray" target="_blank" rel="noopener"
-       class="badge preset-tonal-primary">
+       class="badge preset-filled-primary">
       ferray v0.5.0
     </a>
-    <span class="badge preset-tonal-tertiary">Rust → WASM</span>
-    <span class="badge preset-tonal-success">510 KB binary</span>
+    <span class="badge preset-filled-tertiary">Rust → WASM</span>
+    <span class="badge preset-filled-success">524 KB binary</span>
   </div>
 </div>
