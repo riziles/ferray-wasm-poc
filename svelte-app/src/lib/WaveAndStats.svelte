@@ -65,10 +65,14 @@
   <div class="flex gap-4 flex-wrap items-end">
     <label class="label flex-1 min-w-[200px]">
       <span>Frequency: {freq} Hz</span>
-      <input type="range" class="input" min="1" max="20" bind:value={freq} />
+      <input type="range" class="input" min="0.5" max="20" step="0.1" bind:value={freq} />
     </label>
-    <label class="label w-32">
-      <span>Samples</span>
+    <label class="label w-40">
+      <span>Samples: {samples}</span>
+      <input type="range" class="input" min="10" max="2000" step="10" bind:value={samples} />
+    </label>
+    <label class="label w-24">
+      <span>Exact</span>
       <input type="number" class="input" min="10" max="2000" bind:value={samples} />
     </label>
   </div>

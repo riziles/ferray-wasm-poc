@@ -75,7 +75,7 @@
     </label>
     <label class="label w-48">
       <span>Frequency: {freq}</span>
-      <input type="range" class="input" min="1" max="20" bind:value={freq} />
+      <input type="range" class="input" min="1" max="20" step="0.1" bind:value={freq} />
     </label>
     {#if elapsed}
       <span class="badge preset-tonal-primary">{elapsed.toFixed(2)} ms</span>
