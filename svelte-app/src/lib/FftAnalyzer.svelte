@@ -93,11 +93,6 @@
 </script>
 
 <div class="card card-demo p-6 space-y-4">
-  <h2 class="h2">📈 FFT Spectrum Analyzer</h2>
-  <p class="text-sm text-surface-400">
-    Generates a composite signal (50 + 120 + 300 Hz), applies a window, runs a real FFT,
-    and plots the magnitude spectrum. Peak detection highlights the dominant frequency.
-  </p>
 
   <div class="flex gap-3 items-end flex-wrap">
     <label class="label w-40">

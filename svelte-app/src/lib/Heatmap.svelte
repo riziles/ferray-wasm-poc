@@ -63,11 +63,6 @@
 </script>
 
 <div class="card card-demo p-6 space-y-4">
-  <h2 class="h2">🔥 2D Function Heatmap</h2>
-  <p class="text-sm text-surface-400">
-    Computes a 2D radial function at 200×200 resolution, renders via canvas <code class="code-block">ImageData</code>.
-    40,000 evaluations in a single WASM call.
-  </p>
 
   <div class="flex gap-3 items-end flex-wrap">
     <label class="label w-48">

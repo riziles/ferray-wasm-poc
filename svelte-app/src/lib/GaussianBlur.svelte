@@ -73,11 +73,6 @@
 </script>
 
 <div class="card card-demo p-6 space-y-4">
-  <h2 class="h2">🔵 Gaussian Blur (1D Convolution)</h2>
-  <p class="text-sm text-surface-400">
-    Adds noise to a sine wave, then smooths it with a Gaussian convolution kernel.
-    Red = noisy, Green = smoothed.
-  </p>
 
   <div class="flex gap-3 items-end flex-wrap">
     <label class="label w-32">
