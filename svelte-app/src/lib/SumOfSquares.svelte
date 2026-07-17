@@ -17,12 +17,6 @@
 </script>
 
 <div class="card card-demo p-6 space-y-4">
-  <h2 class="h2">📐 Sum of Squares</h2>
-  <p class="text-sm text-surface-400">
-    A lightweight WASM call: sends a <code class="code-block">Float64Array</code> into Rust, computes
-    <code class="code-block">Σ x²</code> with SIMD, returns a single number. No array copy — the JS heap
-    is shared with WASM linear memory.
-  </p>
 
   <div class="flex gap-3 items-end">
     <label class="label flex-1">

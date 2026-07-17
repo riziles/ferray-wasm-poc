@@ -61,19 +61,18 @@
 </script>
 
 <div class="card card-demo p-6 space-y-4">
-  <h2 class="h2">🌊 Sine Wave + Live Stats</h2>
-  <p class="text-sm text-surface-400">
-    Drag the sliders — the wave and statistics update instantly. Stats computed via
-    <code class="code-block">ferray_stats</code> on the same array you see.
-  </p>
 
   <div class="flex gap-4 flex-wrap items-end">
     <label class="label flex-1 min-w-[200px]">
       <span>Frequency: {freq} Hz</span>
-      <input type="range" class="input" min="1" max="20" bind:value={freq} />
+      <input type="range" class="input" min="0.5" max="20" step="0.1" bind:value={freq} />
     </label>
-    <label class="label w-32">
-      <span>Samples</span>
+    <label class="label w-40">
+      <span>Samples: {samples}</span>
+      <input type="range" class="input" min="10" max="2000" step="10" bind:value={samples} />
+    </label>
+    <label class="label w-24">
+      <span>Exact</span>
       <input type="number" class="input" min="10" max="2000" bind:value={samples} />
     </label>
   </div>

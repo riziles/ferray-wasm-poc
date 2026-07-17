@@ -35,3 +35,11 @@ canvas.spectrum-canvas {
 	padding: 0.25rem 0.5rem;
 	border-radius: 4px;
 }
+
+/* Fix native select appearance in dark mode */
+select.input {
+	color-scheme: dark;
+	background-color: var(--color-surface-800);
+	color: var(--color-surface-200);
+	border-color: var(--color-surface-600);
+}

@@ -1,18 +1,10 @@
-import { defineConfig } from 'vite'
-import { svelte } from '@sveltejs/vite-plugin-svelte'
-import tailwindcss from '@tailwindcss/vite'
+import { sveltekit } from '@sveltejs/kit/vite';
+import tailwindcss from '@tailwindcss/vite';
+import { defineConfig } from 'vite';
 
 export default defineConfig({
-  plugins: [
-    tailwindcss(),
-    svelte(),
-  ],
-  base: '/ferray-wasm-poc/',
-  build: {
-    outDir: 'dist',
-    target: 'esnext',
-  },
+  plugins: [tailwindcss(), sveltekit()],
   optimizeDeps: {
     exclude: ['ferray_wasm_poc'],
   },
-})
+});

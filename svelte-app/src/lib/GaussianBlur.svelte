@@ -73,19 +73,22 @@
 </script>
 
 <div class="card card-demo p-6 space-y-4">
-  <h2 class="h2">🔵 Gaussian Blur (1D Convolution)</h2>
-  <p class="text-sm text-surface-400">
-    Adds noise to a sine wave, then smooths it with a Gaussian convolution kernel.
-    Red = noisy, Green = smoothed.
-  </p>
 
   <div class="flex gap-3 items-end flex-wrap">
-    <label class="label w-32">
-      <span>Sigma</span>
-      <input type="number" class="input" min="0.5" max="10" step="0.5" bind:value={sigma} />
+    <label class="label w-40">
+      <span>Sigma: {sigma}</span>
+      <input type="range" class="input" min="0.5" max="10" step="0.1" bind:value={sigma} />
     </label>
-    <label class="label w-32">
-      <span>Kernel Size</span>
+    <label class="label w-20">
+      <span>Exact</span>
+      <input type="number" class="input" min="0.5" max="10" step="0.1" bind:value={sigma} />
+    </label>
+    <label class="label w-40">
+      <span>Kernel Size: {kernelSize}</span>
+      <input type="range" class="input" min="3" max="21" step="2" bind:value={kernelSize} />
+    </label>
+    <label class="label w-20">
+      <span>Exact</span>
       <input type="number" class="input" min="3" max="21" step="2" bind:value={kernelSize} />
     </label>
   </div>

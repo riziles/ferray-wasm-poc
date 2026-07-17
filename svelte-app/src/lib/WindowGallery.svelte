@@ -56,11 +56,6 @@
 </script>
 
 <div class="card card-demo p-6 space-y-4">
-  <h2 class="h2">🪟 Window Function Gallery</h2>
-  <p class="text-sm text-surface-400">
-    Overlays 7 standard window functions. Adjust points to see the tradeoff between
-    main-lobe width and sidelobe suppression.
-  </p>
 
   <label class="label w-48">
     <span>Points: {points}</span>

@@ -192,14 +192,14 @@ pub fn radial_2d(size: usize, fn_type: &str, freq: f64) -> Result<Vec<f64>, JsVa
             let val = match fn_type {
                 "sinc" => if arg.abs() < 1e-10 { 1.0 } else { arg.sin() / arg },
                 "ripple" => arg.sin() * (-r * 2.0).exp(),
-                "gaussian" => (-r * r * 16.0).exp(),
+                "gaussian" => (-r * r * freq * 4.0).exp(),
                 "waves" => {
                     let angle = dy.atan2(dx);
                     (arg + angle * 4.0).sin()
                 }
                 "eggholder" => {
-                    let xf = dx * 512.0;
-                    let yf = dy * 512.0;
+                    let xf = dx * 512.0 * freq / 4.0;
+                    let yf = dy * 512.0 * freq / 4.0;
                     -(yf + 47.0) * ((xf / 2.0 + yf + 47.0).abs().sqrt()).sin()
                         - xf * ((xf - yf - 47.0).abs().sqrt()).sin()
                 }
