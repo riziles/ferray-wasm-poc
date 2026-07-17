@@ -41,14 +41,19 @@ pub fn stats(arr: &[f64]) -> String {
   <WaveAndStats {wasm} />
 
   <section class="card card-demo p-6 space-y-4">
-    <h2 class="h2">How it works</h2>
+    <h2 class="h2">What is a sine wave?</h2>
 
     <p class="text-surface-300">
-      Uses <code class="code-block">ferray::linspace</code> to generate evenly-spaced points,
-      then <code class="code-block">ferray_ufunc::sin</code> to compute element-wise sine.
-      On native targets, sine is computed via Intel's CORE-MATH library (&lt; 0.5 ULP accuracy).
-      On WASM, the pure-Rust <code class="code-block">libm</code> crate provides ~1—2 ULP accuracy —
-      the same as NumPy.
+      A sine wave is a smooth, repeating oscillation that cycles between −1 and +1.
+      The <strong>frequency</strong> controls how many complete cycles fit in your
+      data — at 3 Hz with 200 samples, you'll see 3 complete waves.
+    </p>
+
+    <p class="text-surface-300">
+      Each point is y(t) = sin(2π · frequency · t), with t evenly spaced from 0 to 1.
+      The statistics below the graph summarize the full wave: minimum, maximum, mean,
+      median, and standard deviation — all computed by <code class="code-block">ferray-stats</code>
+      in a single pass over the array.
     </p>
 
     <h3 class="h3 mt-4">Rust implementation</h3>

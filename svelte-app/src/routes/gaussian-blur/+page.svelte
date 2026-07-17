@@ -53,10 +53,19 @@ pub fn gaussian_blur(data: &[f64], sigma: f64, kernel_size: usize) -> Vec<f64> {
   <GaussianBlur {wasm} />
 
   <section class="card card-demo p-6 space-y-4">
-    <h2 class="h2">How it works</h2>
+    <h2 class="h2">What is convolution?</h2>
 
     <p class="text-surface-300">
-      The Gaussian kernel is a discretized normal distribution:
+      Convolution slides a small <strong>kernel</strong> (a weighted window) over a signal,
+      multiplying and summing at each position. Think of it like a moving weighted average:
+      each output point is influenced by its neighbors. The wider the kernel, the more
+      smoothing.
+    </p>
+
+    <p class="text-surface-300">
+      The <strong>Gaussian kernel</strong> uses the bell-shaped normal distribution,
+      so nearby points matter more than distant ones. The diagram below shows the formula
+      and what happens when you adjust Σ (sigma):
     </p>
 
     <div class="bg-surface-800 p-4 rounded text-center font-mono text-primary-400">
@@ -64,8 +73,9 @@ pub fn gaussian_blur(data: &[f64], sigma: f64, kernel_size: usize) -> Vec<f64> {
     </div>
 
     <p class="text-surface-300">
-      Convolving this kernel with a noisy signal blurs high-frequency noise while preserving
-      low-frequency structure. Larger σ produces more aggressive smoothing.
+      Larger σ = wider bell curve = more aggressive blur. Try sigma=0.5 (barely any smoothing)
+      vs sigma=10 (nearly flat line). The red line is the original noisy signal, green is the
+      smoothed result.
     </p>
 
     <h3 class="h3 mt-4">Rust implementation</h3>

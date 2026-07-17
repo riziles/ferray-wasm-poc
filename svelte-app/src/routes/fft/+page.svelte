@@ -39,18 +39,31 @@ pub fn composite_signal(
 
   <h1 class="h1">📈 FFT Spectrum Analyzer</h1>
   <p class="text-lg text-surface-400">
-    Generates a composite signal, windows it, runs a real FFT, and plots the magnitude spectrum.
+    Takes a signal from the time domain into the frequency domain, revealing the hidden
+    tones that make it up.
   </p>
 
   <FftAnalyzer {wasm} />
 
   <section class="card card-demo p-6 space-y-4">
-    <h2 class="h2">How it works</h2>
+    <h2 class="h2">What is an FFT?</h2>
 
     <p class="text-surface-300">
-      A composite signal is generated from three sinusoids (50 Hz, 120 Hz, 300 Hz) with
-      amplitudes (1.0, 0.5, 0.25). A window function is applied to reduce spectral leakage,
-      then a real FFT computes the frequency-domain representation.
+      The <strong>Fast Fourier Transform</strong> takes a signal measured over time (the
+      wiggly blue line on the left) and decomposes it into its constituent frequencies
+      (the bar chart on the right). It answers the question: "which frequencies are present
+      in this signal, and how strong are they?"
+    </p>
+
+    <p class="text-surface-300">
+      In this demo, the signal is a mix of three pure tones — 50 Hz, 120 Hz, and 300 Hz —
+      at different volumes (1×, 0.5×, 0.25×). The frequency plot shows three clear peaks
+      at exactly those positions, with heights matching the amplitudes.
+    </p>
+
+    <p class="text-surface-300">
+      Try switching between window types — a window function <em>tapers</em> the signal edges
+      to reduce spectral leakage (false peaks caused by the abrupt start/end of your data).
     </p>
 
     <div class="bg-surface-800 p-4 rounded text-center font-mono text-sm text-surface-300 space-y-1">

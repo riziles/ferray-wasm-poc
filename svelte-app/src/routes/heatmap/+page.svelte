@@ -51,12 +51,21 @@ pub fn radial_2d(size: usize, fn_type: &str, freq: f64) -> Vec<f64> {
   <Heatmap {wasm} />
 
   <section class="card card-demo p-6 space-y-4">
-    <h2 class="h2">How it works</h2>
+
+    <h2 class="h2">What are we looking at?</h2>
 
     <p class="text-surface-300">
-      For each pixel (x, y) in a 200×200 grid, a radial distance r is computed from the center,
-      then fed into a chosen 2D function. The result is normalized and mapped through a rainbow
-      colormap to produce the final image.
+      Each pixel in this 200×200 grid is colored by the value of a mathematical function
+      at that point. The x and y coordinates are converted to a radial distance r from the
+      center, then fed into the chosen function. The result is mapped through a rainbow
+      color gradient — blue is low, red is high.
+    </p>
+
+    <p class="text-surface-300">
+      The <strong>Frequency</strong> slider controls how many cycles or oscillations fit in
+      the frame. Crank it up to see more rings/spirals. Try <strong>sinc</strong> at freq=3
+      (gentle rings) vs freq=15 (tight concentric circles), or <strong>spiral waves</strong>
+      at freq=5 vs freq=20.
     </p>
 
     <h3 class="h3 mt-4">Available functions</h3>
@@ -67,18 +76,18 @@ pub fn radial_2d(size: usize, fn_type: &str, freq: f64) -> Vec<f64> {
         <tbody>
           <tr>
             <td class="font-mono">sinc</td>
-            <td class="font-mono">sin(r) / r</td>
-            <td class="text-surface-400">Concentric rings, decaying amplitude</td>
+            <td class="font-mono">sin(f·r) / (f·r)</td>
+            <td class="text-surface-400">Concentric rings, decaying ⬆ with freq</td>
           </tr>
           <tr>
             <td class="font-mono">ripple</td>
-            <td class="font-mono">sin(f·r) / (1 + r/10)</td>
-            <td class="text-surface-400">Water-drop ripples</td>
+            <td class="font-mono">sin(f·r) · exp(−2r)</td>
+            <td class="text-surface-400">Water-drop ripples, fading outward</td>
           </tr>
           <tr>
             <td class="font-mono">gaussian</td>
-            <td class="font-mono">exp(−r² / 2σ²)</td>
-            <td class="text-surface-400">Radial gradient</td>
+            <td class="font-mono">exp(−r² · f · 4)</td>
+            <td class="text-surface-400">Radial gradient, tighter ⬆ with freq</td>
           </tr>
           <tr>
             <td class="font-mono">spiral waves</td>
@@ -88,7 +97,7 @@ pub fn radial_2d(size: usize, fn_type: &str, freq: f64) -> Vec<f64> {
           <tr>
             <td class="font-mono">Eggholder</td>
             <td class="font-mono">−(y+47)·sin√|x/2 + (y+47)| − x·sin√|x − (y+47)|</td>
-            <td class="text-surface-400">Complex optimization landscape</td>
+            <td class="text-surface-400">Famous optimization test function</td>
           </tr>
         </tbody>
       </table>
@@ -100,9 +109,8 @@ pub fn radial_2d(size: usize, fn_type: &str, freq: f64) -> Vec<f64> {
     <h3 class="h3 mt-4">Performance</h3>
     <p class="text-surface-400 text-sm">
       40,000 function evaluations (200×200 grid) complete in 1—3 ms depending on function
-      complexity. The bottleneck is not WASM computation but the JavaScript colormap mapping
-      and <code class="code-block">putImageData</code> call — both are O(pixels) and run in
-      0.5—1 ms.
+      complexity. The JavaScript colormap mapping and <code class="code-block">putImageData</code>
+      call add ~0.5—1 ms.
     </p>
   </section>
 

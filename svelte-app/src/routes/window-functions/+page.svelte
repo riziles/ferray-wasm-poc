@@ -29,14 +29,35 @@ pub fn window_fn(name: &str, size: usize) -> Vec<f64> {
 
   <h1 class="h1">🪟 Window Function Gallery</h1>
   <p class="text-lg text-surface-400">
-    Overlays 7 standard window functions to visualize the tradeoff between main-lobe width and
-    sidelobe suppression.
+    Visual comparison of 7 standard window functions used to smooth the edges of signals
+    before frequency analysis.
   </p>
 
   <WindowGallery {wasm} />
 
   <section class="card card-demo p-6 space-y-4">
-    <h2 class="h2">Window function formulas</h2>
+    <h2 class="h2">What is a window function?</h2>
+
+    <p class="text-surface-300">
+      When you take a slice of a signal to analyze (say, 512 samples), the abrupt cut-off
+      at both ends creates <strong>spectral leakage</strong> — fake frequencies that don't
+      exist in the original signal. A window function fixes this by <em>tapering</em> the
+      signal to zero at the edges, like a fade-in/fade-out.
+    </p>
+
+    <p class="text-surface-300">
+      The trade-off: the wider the window's <strong>main lobe</strong> (the central bump),
+      the less it smears close frequencies together. But a wider main lobe also means lower
+      <strong>sidelobes</strong> (the ripples on the sides), so distant frequencies don't
+      leak into each other. Different windows balance this trade-off differently.
+    </p>
+
+    <p class="text-surface-300">
+      In the graph above: the higher the curve at the center, the better it preserves
+      amplitude. The faster it falls off at the edges, the less leakage.
+    </p>
+
+    <h3 class="h3 mt-4">Window function formulas</h3>
 
     <div class="overflow-x-auto">
       <table class="table table-hover text-xs">
