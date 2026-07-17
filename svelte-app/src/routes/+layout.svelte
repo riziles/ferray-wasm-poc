@@ -4,6 +4,8 @@
   import { initWasm, type WasmApi } from '$lib/wasm/loader';
   import '../app.css';
 
+  let { children } = $props<{ children: import('svelte').Snippet }>();
+
   let wasm = $state<WasmApi | null>(null);
   let error = $state<string | null>(null);
 
