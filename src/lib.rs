@@ -228,3 +228,100 @@ pub fn composite_signal(freqs: Vec<f64>, amps: Vec<f64>, num_samples: usize) -> 
     }
     Ok(signal)
 }
+
+// ---------------------------------------------------------------------------
+// Jacobian conjecture counterexample — Alpöge 2026
+// F(x,y,z) → ℂ³ with constant det(J_F) = -2, but not invertible.
+// ---------------------------------------------------------------------------
+
+/// The Alpöge polynomial map F: R³ → R³
+/// Returns [f1, f2, f3]
+fn alpoge_map(x: f64, y: f64, z: f64) -> [f64; 3] {
+    let xy = x * y;
+    let t1 = 1.0 + xy;          // (1+xy)
+    let t2 = t1 * t1;           // (1+xy)²
+    let t3 = t1 * t2;           // (1+xy)³
+    let t4 = 4.0 + 3.0 * xy;    // (4+3xy)
+
+    let f1 = z * t3 + y * y * t1 * t4;
+    let f2 = y + 3.0 * x * t2 * z + 3.0 * x * y * y * t4;
+    let f3 = 2.0 * x - 3.0 * x * x * y - x * x * x * z;
+
+    [f1, f2, f3]
+}
+
+/// Evaluate F at a single (x,y,z) point.
+#[wasm_bindgen]
+pub fn jacobian_eval(x: f64, y: f64, z: f64) -> Vec<f64> {
+    alpoge_map(x, y, z).to_vec()
+}
+
+/// Batch-evaluate F at N points. Input: flat [x1,y1,z1, x2,y2,z2, ...]
+/// Returns flat [fx1,fy1,fz1, fx2,fy2,fz2, ...]
+#[wasm_bindgen]
+pub fn jacobian_eval_batch(flat_points: Vec<f64>) -> Vec<f64> {
+    let n = flat_points.len() / 3;
+    let mut out = Vec::with_capacity(flat_points.len());
+    for i in 0..n {
+        let x = flat_points[3 * i];
+        let y = flat_points[3 * i + 1];
+        let z = flat_points[3 * i + 2];
+        let r = alpoge_map(x, y, z);
+        out.extend_from_slice(&r);
+    }
+    out
+}
+
+/// Compute the 3×3 Jacobian matrix numerically (central finite difference).
+/// Returns 9 values in row-major order: [J11,J12,J13, J21,J22,J23, J31,J32,J33]
+#[wasm_bindgen]
+pub fn jacobian_matrix(x: f64, y: f64, z: f64) -> Vec<f64> {
+    let h = 1e-6;
+    let f0 = alpoge_map(x, y, z);
+
+    // ∂/∂x
+    let fx = alpoge_map(x + h, y, z);
+    let j11 = (fx[0] - f0[0]) / h;
+    let j21 = (fx[1] - f0[1]) / h;
+    let j31 = (fx[2] - f0[2]) / h;
+
+    // ∂/∂y
+    let fy = alpoge_map(x, y + h, z);
+    let j12 = (fy[0] - f0[0]) / h;
+    let j22 = (fy[1] - f0[1]) / h;
+    let j32 = (fy[2] - f0[2]) / h;
+
+    // ∂/∂z
+    let fz = alpoge_map(x, y, z + h);
+    let j13 = (fz[0] - f0[0]) / h;
+    let j23 = (fz[1] - f0[1]) / h;
+    let j33 = (fz[2] - f0[2]) / h;
+
+    vec![j11, j12, j13, j21, j22, j23, j31, j32, j33]
+}
+
+/// Determinant of the 3×3 Jacobian (always -2 for the Alpöge map).
+#[wasm_bindgen]
+pub fn jacobian_det(x: f64, y: f64, z: f64) -> f64 {
+    let j = jacobian_matrix(x, y, z);
+    j[0] * (j[4] * j[8] - j[5] * j[7])
+        - j[1] * (j[3] * j[8] - j[5] * j[6])
+        + j[2] * (j[3] * j[7] - j[4] * j[6])
+}
+
+/// Sample N random points and return (point, det) pairs to verify constancy.
+/// Returns flat [x1,y1,z1,det1, x2,y2,z2,det2, ...]
+#[wasm_bindgen]
+pub fn jacobian_verify(n: usize) -> Vec<f64> {
+    let mut out = Vec::with_capacity(n * 4);
+    for i in 0..n {
+        // Deterministic pseudo-random from index
+        let seed = (i as u64).wrapping_mul(0x9e3779b97f4a7c15);
+        let x = 10.0 * ((seed as f64) / (u64::MAX as f64) - 0.5);
+        let y = 10.0 * (((seed ^ 0xdeadbeef) as f64) / (u64::MAX as f64) - 0.5);
+        let z = 10.0 * (((seed ^ 0xcafebabe) as f64) / (u64::MAX as f64) - 0.5);
+        let d = jacobian_det(x, y, z);
+        out.extend_from_slice(&[x, y, z, d]);
+    }
+    out
+}

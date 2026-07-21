@@ -9,6 +9,7 @@
   import FftAnalyzer from '$lib/FftAnalyzer.svelte';
   import WindowGallery from '$lib/WindowGallery.svelte';
   import Heatmap from '$lib/Heatmap.svelte';
+  import Jacobian from '$lib/Jacobian.svelte';
   import TechStack from '$lib/TechStack.svelte';
 
   const getWasm = getContext<() => WasmApi>('wasm');
@@ -17,6 +18,13 @@
 
 <div class="container mx-auto px-4 py-8 max-w-5xl space-y-12">
   <Hero />
+
+  <section class="group/demo border border-primary-700/40 rounded-lg p-4 bg-primary-950/10">
+    <a href="{base}/jacobian" data-sveltekit-prefetch class="block hover:text-primary-400 transition-colors">
+      <h2 class="h2 mb-4 cursor-pointer">🧮 Jacobian Conjecture Counterexample <span class="badge preset-filled-error text-xs">NEW</span></h2>
+    </a>
+    <Jacobian {wasm} />
+  </section>
 
   <section class="group/demo">
     <a href="{base}/sum-of-squares" data-sveltekit-prefetch class="block hover:text-primary-400 transition-colors">
