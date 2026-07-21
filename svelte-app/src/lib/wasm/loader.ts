@@ -6,6 +6,11 @@ export interface WasmApi {
   composite_signal: WasmModule['composite_signal'];
   fft_magnitude: WasmModule['fft_magnitude'];
   gaussian_blur: WasmModule['gaussian_blur'];
+  jacobian_det: WasmModule['jacobian_det'];
+  jacobian_eval: WasmModule['jacobian_eval'];
+  jacobian_eval_batch: WasmModule['jacobian_eval_batch'];
+  jacobian_matrix: WasmModule['jacobian_matrix'];
+  jacobian_verify: WasmModule['jacobian_verify'];
   linspace: WasmModule['linspace'];
   radial_2d: WasmModule['radial_2d'];
   sine_wave: WasmModule['sine_wave'];
@@ -26,6 +31,11 @@ function createApi(mod: WasmModule): WasmApi {
     composite_signal: mod.composite_signal,
     fft_magnitude: mod.fft_magnitude,
     gaussian_blur: mod.gaussian_blur,
+    jacobian_det: mod.jacobian_det,
+    jacobian_eval: mod.jacobian_eval,
+    jacobian_eval_batch: mod.jacobian_eval_batch,
+    jacobian_matrix: mod.jacobian_matrix,
+    jacobian_verify: mod.jacobian_verify,
     linspace: mod.linspace,
     radial_2d: mod.radial_2d,
     sine_wave: mod.sine_wave,
