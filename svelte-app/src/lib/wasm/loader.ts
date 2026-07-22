@@ -10,6 +10,8 @@ export interface WasmApi {
   jacobian_eval: WasmModule['jacobian_eval'];
   jacobian_eval_batch: WasmModule['jacobian_eval_batch'];
   jacobian_autodiff: WasmModule['jacobian_autodiff'];
+  custom_eval: WasmModule['custom_eval'];
+  custom_score: WasmModule['custom_score'];
   counterexample_score: WasmModule['counterexample_score'];
   counterexample_find_collision: WasmModule['counterexample_find_collision'];
   linspace: WasmModule['linspace'];
@@ -36,6 +38,8 @@ function createApi(mod: WasmModule): WasmApi {
     jacobian_eval: mod.jacobian_eval,
     jacobian_eval_batch: mod.jacobian_eval_batch,
     jacobian_autodiff: mod.jacobian_autodiff,
+    custom_eval: mod.custom_eval,
+    custom_score: mod.custom_score,
     counterexample_score: mod.counterexample_score,
     counterexample_find_collision: mod.counterexample_find_collision,
     linspace: mod.linspace,

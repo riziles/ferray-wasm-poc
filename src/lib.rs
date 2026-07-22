@@ -230,6 +230,248 @@ pub fn composite_signal(freqs: Vec<f64>, amps: Vec<f64>, num_samples: usize) -> 
 }
 
 // ---------------------------------------------------------------------------
+// Custom polynomial expression parser for Counterexample Lab
+// ---------------------------------------------------------------------------
+
+/// AST node for a polynomial expression in variables x, y, z.
+#[derive(Debug, Clone)]
+enum Expr {
+    Const(f64),
+    Var(u8),          // 0=x, 1=y, 2=z
+    Add(Box<Expr>, Box<Expr>),
+    Sub(Box<Expr>, Box<Expr>),
+    Mul(Box<Expr>, Box<Expr>),
+    Div(Box<Expr>, Box<Expr>),
+    Pow(Box<Expr>, i32),
+    Neg(Box<Expr>),
+}
+
+/// Trait for evaluating expressions with different number types.
+trait Eval: Sized + Clone {
+    fn from_f64(v: f64) -> Self;
+    fn add(self, other: Self) -> Self;
+    fn sub(self, other: Self) -> Self;
+    fn mul(self, other: Self) -> Self;
+    fn div(self, other: Self) -> Self;
+    fn powi(self, n: i32) -> Self;
+    fn neg(self) -> Self;
+}
+
+impl Eval for f64 {
+    fn from_f64(v: f64) -> Self { v }
+    fn add(self, o: Self) -> Self { self + o }
+    fn sub(self, o: Self) -> Self { self - o }
+    fn mul(self, o: Self) -> Self { self * o }
+    fn div(self, o: Self) -> Self { self / o }
+    fn powi(self, n: i32) -> Self { self.powi(n) }
+    fn neg(self) -> Self { -self }
+}
+
+impl Eval for ferray_autodiff::DualNumber<f64> {
+    fn from_f64(v: f64) -> Self { ferray_autodiff::DualNumber::constant(v) }
+    fn add(self, o: Self) -> Self { self + o }
+    fn sub(self, o: Self) -> Self { self - o }
+    fn mul(self, o: Self) -> Self { self * o }
+    fn div(self, o: Self) -> Self { self / o }
+    fn powi(self, n: i32) -> Self { self.powi(n) }
+    fn neg(self) -> Self { -self }
+}
+
+fn eval<T: Eval>(e: &Expr, x: &T, y: &T, z: &T) -> T {
+    match e {
+        Expr::Const(v) => T::from_f64(*v),
+        Expr::Var(0) => x.clone(),
+        Expr::Var(1) => y.clone(),
+        Expr::Var(2) => z.clone(),
+        Expr::Var(_) => T::from_f64(0.0),
+        Expr::Add(a, b) => eval(a, x, y, z).add(eval(b, x, y, z)),
+        Expr::Sub(a, b) => eval(a, x, y, z).sub(eval(b, x, y, z)),
+        Expr::Mul(a, b) => eval(a, x, y, z).mul(eval(b, x, y, z)),
+        Expr::Div(a, b) => eval(a, x, y, z).div(eval(b, x, y, z)),
+        Expr::Pow(a, n) => eval(a, x, y, z).powi(*n),
+        Expr::Neg(a) => eval(a, x, y, z).neg(),
+    }
+}
+
+// ── Recursive descent parser ──
+
+struct Parser { chars: Vec<char>, pos: usize }
+
+impl Parser {
+    fn peek(&self) -> Option<char> { self.chars.get(self.pos).copied() }
+    fn advance(&mut self) { self.pos += 1; }
+    fn skip_ws(&mut self) { while self.peek().map_or(false, |c| c.is_whitespace()) { self.advance(); } }
+
+    fn parse_expr(&mut self) -> Result<Expr, String> {
+        self.skip_ws();
+        let mut left = self.parse_term()?;
+        loop {
+            self.skip_ws();
+            match self.peek() {
+                Some('+') => { self.advance(); left = Expr::Add(Box::new(left), Box::new(self.parse_term()?)); }
+                Some('-') => { self.advance(); left = Expr::Sub(Box::new(left), Box::new(self.parse_term()?)); }
+                _ => break,
+            }
+        }
+        Ok(left)
+    }
+
+    fn parse_term(&mut self) -> Result<Expr, String> {
+        self.skip_ws();
+        let mut left = self.parse_factor()?;
+        loop {
+            self.skip_ws();
+            match self.peek() {
+                Some('*') => { self.advance(); left = Expr::Mul(Box::new(left), Box::new(self.parse_factor()?)); }
+                Some('/') => { self.advance(); left = Expr::Div(Box::new(left), Box::new(self.parse_factor()?)); }
+                _ => break,
+            }
+        }
+        Ok(left)
+    }
+
+    fn parse_factor(&mut self) -> Result<Expr, String> {
+        self.skip_ws();
+        match self.peek() {
+            Some('-') => { self.advance(); Ok(Expr::Neg(Box::new(self.parse_power()?))) }
+            Some('+') => { self.advance(); self.parse_power() }
+            _ => self.parse_power(),
+        }
+    }
+
+    fn parse_power(&mut self) -> Result<Expr, String> {
+        let base = self.parse_atom()?;
+        self.skip_ws();
+        if self.peek() == Some('^') {
+            self.advance();
+            self.skip_ws();
+            let exp = self.parse_integer()?;
+            Ok(Expr::Pow(Box::new(base), exp))
+        } else {
+            Ok(base)
+        }
+    }
+
+    fn parse_atom(&mut self) -> Result<Expr, String> {
+        self.skip_ws();
+        match self.peek() {
+            Some('(') => {
+                self.advance();
+                let e = self.parse_expr()?;
+                self.skip_ws();
+                if self.peek() != Some(')') { return Err("Expected ')'".into()); }
+                self.advance();
+                Ok(e)
+            }
+            Some('x') | Some('X') => { self.advance(); Ok(Expr::Var(0)) }
+            Some('y') | Some('Y') => { self.advance(); Ok(Expr::Var(1)) }
+            Some('z') | Some('Z') => { self.advance(); Ok(Expr::Var(2)) }
+            Some(c) if c.is_ascii_digit() || c == '.' => self.parse_number(),
+            Some(c) => Err(format!("Unexpected character '{}'", c)),
+            None => Err("Unexpected end of expression".into()),
+        }
+    }
+
+    fn parse_number(&mut self) -> Result<Expr, String> {
+        self.skip_ws();
+        let start = self.pos;
+        while self.peek().map_or(false, |c| c.is_ascii_digit() || c == '.') { self.advance(); }
+        let s: String = self.chars[start..self.pos].iter().collect();
+        s.parse::<f64>().map(Expr::Const).map_err(|_| format!("Invalid number: {}", s))
+    }
+
+    fn parse_integer(&mut self) -> Result<i32, String> {
+        self.skip_ws();
+        let sign = if self.peek() == Some('-') { self.advance(); -1 } else { 1 };
+        let start = self.pos;
+        while self.peek().map_or(false, |c| c.is_ascii_digit()) { self.advance(); }
+        if start == self.pos { return Err("Expected integer".into()); }
+        let s: String = self.chars[start..self.pos].iter().collect();
+        let n: i32 = s.parse().map_err(|_| format!("Invalid integer: {}", s))?;
+        Ok(sign * n)
+    }
+}
+
+fn parse_expression(input: &str) -> Result<Expr, String> {
+    let chars: Vec<char> = input.chars().collect();
+    let mut parser = Parser { chars, pos: 0 };
+    let expr = parser.parse_expr()?;
+    parser.skip_ws();
+    if parser.pos < parser.chars.len() {
+        Err(format!("Unexpected '{}' at position {}", parser.chars[parser.pos], parser.pos))
+    } else {
+        Ok(expr)
+    }
+}
+
+/// Parse and evaluate 3 custom expressions at a point.
+/// Returns [f1, f2, f3] or error.
+#[wasm_bindgen]
+pub fn custom_eval(e1: &str, e2: &str, e3: &str, x: f64, y: f64, z: f64) -> Result<Vec<f64>, JsValue> {
+    let a1 = parse_expression(e1).map_err(|e| JsValue::from_str(&e))?;
+    let a2 = parse_expression(e2).map_err(|e| JsValue::from_str(&e))?;
+    let a3 = parse_expression(e3).map_err(|e| JsValue::from_str(&e))?;
+    Ok(vec![
+        eval::<f64>(&a1, &x, &y, &z),
+        eval::<f64>(&a2, &x, &y, &z),
+        eval::<f64>(&a3, &x, &y, &z),
+    ])
+}
+
+/// Score custom expressions: sample N points, compute det(J_F) at each.
+/// Returns [mean, std_dev, min, max, ...dets...]
+#[wasm_bindgen]
+pub fn custom_score(e1: &str, e2: &str, e3: &str, num_samples: usize) -> Result<Vec<f64>, JsValue> {
+    let a1 = parse_expression(e1).map_err(|e| JsValue::from_str(&e))?;
+    let a2 = parse_expression(e2).map_err(|e| JsValue::from_str(&e))?;
+    let a3 = parse_expression(e3).map_err(|e| JsValue::from_str(&e))?;
+
+    let mut dets = Vec::with_capacity(num_samples);
+    for i in 0..num_samples {
+        let s = (i as u64).wrapping_mul(0x9e3779b97f4a7c15);
+        let x = 10.0 * ((s as f64) / (u64::MAX as f64) - 0.5);
+        let y = 10.0 * (((s ^ 0xdead) as f64) / (u64::MAX as f64) - 0.5);
+        let z = 10.0 * (((s ^ 0xbeef) as f64) / (u64::MAX as f64) - 0.5);
+
+        // Compute Jacobian via ferray-autodiff using the DualNumber evaluator
+        use ferray_autodiff::{jacobian, DualNumber};
+        let (jac, _m) = jacobian(
+            |v: &[DualNumber<f64>]| {
+                vec![
+                    eval::<DualNumber<f64>>(&a1, &v[0], &v[1], &v[2]),
+                    eval::<DualNumber<f64>>(&a2, &v[0], &v[1], &v[2]),
+                    eval::<DualNumber<f64>>(&a3, &v[0], &v[1], &v[2]),
+                ]
+            },
+            &[x, y, z],
+        );
+        let mat = Array::from_vec(Ix2::new([3, 3]), jac)
+            .map_err(|e| JsValue::from_str(&format!("{:?}", e)))?;
+        dets.push(ferray_linalg::det(&mat).unwrap_or(0.0));
+    }
+
+    let arr = Array::from_vec(Ix1::new([num_samples]), dets)
+        .map_err(|e| JsValue::from_str(&format!("{:?}", e)))?;
+
+    let mean = ferray_stats::mean(&arr, None)
+        .map_err(|e| JsValue::from_str(&format!("{:?}", e)))?
+        .iter().next().copied().unwrap_or(0.0);
+    let std_dev = ferray_stats::std_(&arr, None, 0)
+        .map_err(|e| JsValue::from_str(&format!("{:?}", e)))?
+        .iter().next().copied().unwrap_or(0.0);
+    let min_det = ferray_stats::min(&arr, None)
+        .map_err(|e| JsValue::from_str(&format!("{:?}", e)))?
+        .iter().next().copied().unwrap_or(0.0);
+    let max_det = ferray_stats::max(&arr, None)
+        .map_err(|e| JsValue::from_str(&format!("{:?}", e)))?
+        .iter().next().copied().unwrap_or(0.0);
+
+    let mut result = vec![mean, std_dev, min_det, max_det];
+    result.extend(arr.iter().copied().collect::<Vec<_>>());
+    Ok(result)
+}
+
+// ---------------------------------------------------------------------------
 // Jacobian conjecture counterexample — Alpöge 2026
 //
 // F: R³ → R³ with constant det(J_F) = -2 everywhere, but two distinct
