@@ -70,6 +70,84 @@
     setTimeout(runScore, 50);
   }
 
+  // ── Auto-search (hill climbing + random restarts) ──
+  let autoSearching = $state(false);
+  let autoIter = $state(0);
+  let autoBestConstancy = $state(0);
+  let autoCancel: (() => void) | null = null;
+
+  function startAutoSearch() {
+    autoSearching = true;
+    autoIter = 0;
+    autoBestConstancy = score.constancy;
+    let cancelled = false;
+    autoCancel = () => { cancelled = true; };
+
+    const keys = ['a', 'b', 'c', 'd', 'e', 'f'] as const;
+    const stepSize = 0.1;
+
+    function step() {
+      if (cancelled || !autoSearching) return;
+
+      autoIter++;
+
+      // Pick a random parameter and nudge it
+      const key = keys[Math.floor(Math.random() * keys.length)];
+      const oldVal = p[key];
+      const delta = (Math.random() - 0.5) * 2 * stepSize;
+      p[key] = Math.round((oldVal + delta) * 10) / 10;
+
+      // Score it
+      const params = [p.a, p.b, p.c, p.d, p.e, p.f];
+      const result = wasm!.counterexample_score(params, 20); // fast: 20 samples
+      const newConstancy = 1.0 - Math.min(1.0, result[1] / (Math.abs(result[0]) + 0.001));
+
+      if (newConstancy > score.constancy + 0.001) {
+        // Better — keep it and do a full score
+        score = {
+          mean: result[0],
+          std: result[1],
+          min: result[2],
+          max: result[3],
+          constancy: newConstancy,
+        };
+        if (newConstancy > autoBestConstancy) autoBestConstancy = newConstancy;
+      } else {
+        // Worse — revert
+        p[key] = oldVal;
+      }
+
+      // Random restart occasionally if stuck
+      if (autoIter % 50 === 0 && score.constancy < 0.99) {
+        p = {
+          a: Math.round((Math.random() * 6 - 3) * 10) / 10,
+          b: Math.round((Math.random() * 6 - 3) * 10) / 10,
+          c: Math.round((Math.random() * 6 - 3) * 10) / 10,
+          d: Math.round((Math.random() * 6 - 3) * 10) / 10,
+          e: Math.round((Math.random() * 6 - 3) * 10) / 10,
+          f: Math.round((Math.random() * 6 - 3) * 10) / 10,
+        };
+      }
+
+      // Stop if we found a constant Jacobian
+      if (score.constancy >= 0.9999) {
+        autoSearching = false;
+        // Full quality score
+        setTimeout(() => runScore(), 10);
+        return;
+      }
+
+      setTimeout(step, 0);
+    }
+
+    setTimeout(step, 0);
+  }
+
+  function stopAutoSearch() {
+    autoSearching = false;
+    autoCancel?.();
+  }
+
   onMount(runScore);
 </script>
 
@@ -79,7 +157,27 @@
     <h3 class="h3 flex-1">🔬 Map Parameters</h3>
     <button class="btn preset-tonal text-xs" onclick={loadAlpoge}>📋 Load Alpöge</button>
     <button class="btn preset-tonal text-xs" onclick={randomize}>🎲 Randomize</button>
+    {#if autoSearching}
+      <button class="btn preset-filled-warning text-xs animate-pulse" onclick={stopAutoSearch}>
+        ⏹ Stop ({autoIter})
+      </button>
+    {:else}
+      <button class="btn preset-tonal text-xs" onclick={startAutoSearch}>
+        🤖 Auto-Search
+      </button>
+    {/if}
   </div>
+
+  {#if autoSearching || autoBestConstancy > 0}
+    <div class="text-xs text-surface-500">
+      {#if autoSearching}
+        🤖 Searching… iteration {autoIter}
+      {:else}
+        ✅ Search stopped after {autoIter} iterations
+      {/if}
+      · Best constancy: <span class="font-mono text-primary-400">{(autoBestConstancy * 100).toFixed(2)}%</span>
+    </div>
+  {/if}
 
   <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
     {#each paramNames as { key, label, def }}
