@@ -78,7 +78,17 @@
 
   <TechStack />
 
-  <footer class="text-center text-xs text-surface-500 pb-8">
-    Built with <span class="text-surface-400">Ferray</span> + <span class="text-surface-400">Rust</span> + <span class="text-surface-400">WASM</span> + <span class="text-surface-400">SvelteKit</span> + <span class="text-surface-400">Skeleton v4</span>
+  <footer class="text-center text-xs text-surface-500 pb-8 space-y-2">
+    <div>
+      Built with
+      <a href="https://github.com/riziles/ferray-riz-dev" target="_blank" class="text-primary-400 hover:text-primary-300 underline">Ferray</a> +
+      <a href="https://www.rust-lang.org" target="_blank" class="text-primary-400 hover:text-primary-300 underline">Rust</a> +
+      <a href="https://webassembly.org" target="_blank" class="text-primary-400 hover:text-primary-300 underline">WASM</a> +
+      <a href="https://svelte.dev/docs/kit" target="_blank" class="text-primary-400 hover:text-primary-300 underline">SvelteKit</a> +
+      <a href="https://skeletonlabs.dev" target="_blank" class="text-primary-400 hover:text-primary-300 underline">Skeleton v4</a>
+    </div>
+    <div>
+      <a href="https://github.com/riziles/ferray-wasm-poc" target="_blank" class="text-surface-600 hover:text-surface-400 underline">View source on GitHub</a>
+    </div>
   </footer>
 </div>
