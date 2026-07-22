@@ -19,21 +19,24 @@
     [f1, f2, f3]
 }`;
 
-  const detRustCode = `fn jacobian_det(x: f64, y: f64, z: f64) -> f64 {
-    let h = 1e-6;
-    let f0 = alpoge_map(x, y, z);
-    let fx = alpoge_map(x + h, y, z);
-    let fy = alpoge_map(x, y + h, z);
-    let fz = alpoge_map(x, y, z + h);
+  const batchCode = `// Batch evaluation using ferray vectorized ops
+fn jacobian_eval_batch(flat: Vec<f64>) -> Result<Vec<f64>> {
+    let n = flat.len() / 3;
+    let x = Array::from_vec(Ix1(n), x_col)?;
+    let y = Array::from_vec(Ix1(n), y_col)?;
+    let z = Array::from_vec(Ix1(n), z_col)?;
 
-    // Jacobian via finite differences
-    let j11 = (fx[0] - f0[0]) / h;
-    // ... (8 more entries) ...
+    let xy  = (&x * &y).unwrap();         // x_i · y_i
+    let t1  = xy.mapv(|v| 1.0 + v);      // 1 + xy
+    let t2  = t1.mapv(|v| v * v);        // (1+xy)^2
+    let t3  = (&t1 * &t2).unwrap();      // (1+xy)^3
+    let t4  = xy.mapv(|v| 4.0 + 3.0*v);  // 4 + 3xy
 
-    // 3x3 determinant
-    j11 * (j22 * j33 - j23 * j32)
-      - j12 * (j21 * j33 - j23 * j31)
-      + j13 * (j21 * j32 - j22 * j31)
+    let f1 = (&(&z * &t3).unwrap()
+        + &(&(&y*&y).unwrap() * &t1).unwrap()
+            * &t4).unwrap();
+    // ... f2, f3 similarly ...
+    Ok(interleave(f1, f2, f3))
 }`;
 </script>
 
@@ -116,8 +119,8 @@
     <h3 class="h3 mt-4">The map (Rust)</h3>
     <pre class="code-block p-4 overflow-x-auto text-xs"><code>{rustCode}</code></pre>
 
-    <h3 class="h3 mt-4">Jacobian determinant calculation</h3>
-    <pre class="code-block p-4 overflow-x-auto text-xs"><code>{detRustCode}</code></pre>
+    <h3 class="h3 mt-4">Batch evaluation with ferray</h3>
+    <pre class="code-block p-4 overflow-x-auto text-xs"><code>{batchCode}</code></pre>
 
     <h3 class="h3 mt-4">Historical context</h3>
     <div class="text-sm text-surface-400 space-y-2">
