@@ -100,17 +100,8 @@
     // Get slice points
     const inputPts = getSlicePoints();
 
-    // Compute output points
-    const outputPts = new Float64Array(inputPts.length);
-    for (let i = 0; i < gridSize * gridSize; i++) {
-      const x = inputPts[i * 3];
-      const y = inputPts[i * 3 + 1];
-      const z = inputPts[i * 3 + 2];
-      const out = wasm.jacobian_eval(x, y, z);
-      outputPts[i * 3] = out[0];
-      outputPts[i * 3 + 1] = out[1];
-      outputPts[i * 3 + 2] = out[2];
-    }
+    // Compute output points — single WASM call via ferray batch
+    const outputPts = wasm.jacobian_eval_batch(Array.from(inputPts) as number[]);
 
     // Draw wireframe grids
     drawWireframe(ctx, inputPts, 0);
