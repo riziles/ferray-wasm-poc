@@ -8,7 +8,6 @@
   let p = $state({ a: 1.0, b: 1.0, c: 1.0, d: 3.0, e: 3.0, f: 2.0 });
 
   let score = $state({ mean: 0, std: 0, min: 0, max: 0, constancy: 0 });
-  let scoring = $state(false);
   let collisionResult = $state('');
   let searching = $state(false);
 
@@ -23,9 +22,7 @@
 
   function runScore() {
     if (!wasm) return;
-    scoring = true;
     const params = [p.a, p.b, p.c, p.d, p.e, p.f];
-    // Use setTimeout so UI updates before blocking WASM call
     setTimeout(() => {
       const result = wasm.counterexample_score(params, 100);
       score = {
@@ -35,7 +32,6 @@
         max: result[3],
         constancy: 1.0 - Math.min(1.0, result[1] / (Math.abs(result[0]) + 0.001)),
       };
-      scoring = false;
     }, 10);
   }
 
@@ -81,9 +77,6 @@
 
   <div class="flex gap-2 items-center flex-wrap">
     <h3 class="h3 flex-1">🔬 Map Parameters</h3>
-    <button class="btn preset-tonal-primary text-xs" onclick={runScore} disabled={scoring}>
-      {scoring ? 'Sampling...' : '↻ Re-score'}
-    </button>
     <button class="btn preset-tonal text-xs" onclick={loadAlpoge}>📋 Load Alpöge</button>
     <button class="btn preset-tonal text-xs" onclick={randomize}>🎲 Randomize</button>
   </div>
