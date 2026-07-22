@@ -488,3 +488,132 @@ pub fn jacobian_verify(n: usize) -> Result<Vec<f64>, JsValue> {
     }
     Ok(out)
 }
+
+// ---------------------------------------------------------------------------
+// Counterexample Lab — interactive parameterized search
+// ---------------------------------------------------------------------------
+
+/// Parameterized polynomial map family (6 coefficients).
+/// Parameters: [a, b, c, d, e, f]
+/// Alpöge counterexample at: [1, 1, 1, 3, 3, 2]
+fn parametric_map(x: f64, y: f64, z: f64, p: &[f64]) -> [f64; 3] {
+    let xy = x * y;
+    let t1 = 1.0 + xy;
+    let t2 = t1 * t1;
+    let t3 = t1 * t2;
+    let t4 = 4.0 + 3.0 * xy;
+
+    let f1 = p[0] * z * t3 + p[1] * y * y * t1 * t4;
+    let f2 = p[2] * y + p[3] * x * t2 * z + p[4] * x * y * y * t4;
+    let f3 = p[5] * x - 3.0 * x * x * y - x * x * x * z;
+    [f1, f2, f3]
+}
+
+/// Score a parameter set: sample N random points, compute det(J_F) at each.
+/// Returns [mean_det, std_dev, min_det, max_det, sample1_det, sample2_det, ...]
+#[wasm_bindgen]
+pub fn counterexample_score(params: Vec<f64>, num_samples: usize) -> Result<Vec<f64>, JsValue> {
+    if params.len() < 6 || num_samples == 0 {
+        return Ok(vec![0.0, 0.0, 0.0, 0.0]);
+    }
+
+    // Deterministic pseudo-random sampling
+    let mut dets = Vec::with_capacity(num_samples);
+    for i in 0..num_samples {
+        let s = (i as u64).wrapping_mul(0x9e3779b97f4a7c15);
+        let x = 10.0 * ((s as f64) / (u64::MAX as f64) - 0.5);
+        let y = 10.0 * (((s ^ 0xdead) as f64) / (u64::MAX as f64) - 0.5);
+        let z = 10.0 * (((s ^ 0xbeef) as f64) / (u64::MAX as f64) - 0.5);
+        dets.push(jacobian_det_parametric(x, y, z, &params));
+    }
+
+    let mean = dets.iter().sum::<f64>() / num_samples as f64;
+    let variance = dets.iter().map(|&d| (d - mean).powi(2)).sum::<f64>() / num_samples as f64;
+    let std_dev = variance.sqrt();
+    let min_det = dets.iter().cloned().fold(f64::INFINITY, f64::min);
+    let max_det = dets.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+
+    let mut result = vec![mean, std_dev, min_det, max_det];
+    result.extend_from_slice(&dets);
+    Ok(result)
+}
+
+/// Compute det(J_F) for the parametric map using ferray-autodiff.
+fn jacobian_det_parametric(x: f64, y: f64, z: f64, p: &[f64]) -> f64 {
+    use ferray_autodiff::{jacobian, DualNumber};
+
+    let (jac, _m) = jacobian(
+        |v: &[DualNumber<f64>]| {
+            let xy = v[0] * v[1];
+            let t1 = DualNumber::constant(1.0) + xy;
+            let t2 = t1 * t1;
+            let t3 = t1 * t2;
+            let t4 = DualNumber::constant(4.0) + DualNumber::constant(3.0) * xy;
+
+            let f1 = DualNumber::constant(p[0]) * v[2] * t3
+                   + DualNumber::constant(p[1]) * v[1] * v[1] * t1 * t4;
+            let f2 = DualNumber::constant(p[2]) * v[1]
+                   + DualNumber::constant(p[3]) * v[0] * t2 * v[2]
+                   + DualNumber::constant(p[4]) * v[0] * v[1] * v[1] * t4;
+            let f3 = DualNumber::constant(p[5]) * v[0]
+                   - DualNumber::constant(3.0) * v[0] * v[0] * v[1]
+                   - v[0] * v[0] * v[0] * v[2];
+            vec![f1, f2, f3]
+        },
+        &[x, y, z],
+    );
+
+    use ferray_linalg::det;
+    let mat = Array::from_vec(Ix2::new([3, 3]), jac)
+        .expect("3×3 matrix always valid");
+    det(&mat).unwrap_or(0.0)
+}
+
+/// Search for collision points for a parameter set.
+/// Returns [x1,y1,z1,x2,y2,z2,dist] or empty if no collision found.
+#[wasm_bindgen]
+pub fn counterexample_find_collision(params: Vec<f64>) -> Vec<f64> {
+    if params.len() < 6 {
+        return vec![];
+    }
+
+    for attempt in 0..20 {
+        let s = (attempt as u64).wrapping_mul(0x9e3779b97f4a7c15);
+        let mut x1 = 10.0 * ((s as f64) / (u64::MAX as f64) - 0.5);
+        let mut y1 = 10.0 * (((s ^ 0xdead) as f64) / (u64::MAX as f64) - 0.5);
+        let mut z1 = 10.0 * (((s ^ 0xbeef) as f64) / (u64::MAX as f64) - 0.5);
+        let mut x2 = x1 + 0.5;
+        let mut y2 = y1 + 0.3;
+        let mut z2 = z1 - 0.4;
+
+        for _iter in 0..200 {
+            let f1 = parametric_map(x1, y1, z1, &params);
+            let f2 = parametric_map(x2, y2, z2, &params);
+            let dx = f1[0] - f2[0];
+            let dy = f1[1] - f2[1];
+            let dz = f1[2] - f2[2];
+            let dist = (dx * dx + dy * dy + dz * dz).sqrt();
+
+            if dist < 1e-6 {
+                return vec![x1, y1, z1, x2, y2, z2, dist];
+            }
+
+            let h = 1e-4;
+            let rate = 0.01;
+            let fx1 = parametric_map(x1 + h, y1, z1, &params);
+            let g1 = ((fx1[0]-f2[0]).powi(2)+(fx1[1]-f2[1]).powi(2)+(fx1[2]-f2[2]).powi(2)).sqrt();
+            x1 -= rate * (g1 - dist) / h;
+            let fy1 = parametric_map(x1, y1 + h, z1, &params);
+            let g2 = ((fy1[0]-f2[0]).powi(2)+(fy1[1]-f2[1]).powi(2)+(fy1[2]-f2[2]).powi(2)).sqrt();
+            y1 -= rate * (g2 - dist) / h;
+            let fz1 = parametric_map(x1, y1, z1 + h, &params);
+            let g3 = ((fz1[0]-f2[0]).powi(2)+(fz1[1]-f2[1]).powi(2)+(fz1[2]-f2[2]).powi(2)).sqrt();
+            z1 -= rate * (g3 - dist) / h;
+
+            x2 += rate * (g1 - dist) / h;
+            y2 += rate * (g2 - dist) / h;
+            z2 += rate * (g3 - dist) / h;
+        }
+    }
+    vec![]
+}
