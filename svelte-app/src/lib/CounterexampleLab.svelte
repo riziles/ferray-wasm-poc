@@ -234,6 +234,9 @@
         <pre class="mt-2 text-xs font-mono text-surface-300 whitespace-pre-wrap
           {collisionResult.startsWith('COLLISION') ? 'text-green-400' : 'text-surface-500'}">
           {collisionResult}</pre>
+        {#if collisionResult.startsWith('No collision')}
+          <span class="text-xs text-surface-500 mt-1 block">Best-effort gradient descent — not guaranteed to find all collisions.</span>
+        {/if}
       {/if}
     </div>
   </div>

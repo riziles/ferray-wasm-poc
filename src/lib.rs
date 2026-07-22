@@ -622,7 +622,16 @@ pub fn counterexample_find_collision(params: Vec<f64>) -> Vec<f64> {
             let dist = (dx * dx + dy * dy + dz * dz).sqrt();
 
             if dist < 1e-6 {
-                return vec![x1, y1, z1, x2, y2, z2, dist];
+                // Verify the points are actually distinct
+                let dx = x1 - x2;
+                let dy = y1 - y2;
+                let dz = z1 - z2;
+                let input_dist = (dx * dx + dy * dy + dz * dz).sqrt();
+                if input_dist > 0.01 {
+                    return vec![x1, y1, z1, x2, y2, z2, dist];
+                }
+                // Points converged to same location — not a real collision
+                break;
             }
 
             let h = 1e-4;
