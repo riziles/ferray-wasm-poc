@@ -6,37 +6,36 @@
   const getWasm = getContext<() => WasmApi>('wasm');
   const wasm = $derived(getWasm());
 
-  const rustCode = `fn alpoge_map(x: f64, y: f64, z: f64) -> [f64; 3] {
-    let xy = x * y;
-    let t1 = 1.0 + xy;
-    let t2 = t1 * t1;
-    let t3 = t1 * t2;
-    let t4 = 4.0 + 3.0 * xy;
+  const rustCode = `use ferray_autodiff::{jacobian, DualNumber};
+use ferray_linalg::det;
 
-    let f1 = z * t3 + y * y * t1 * t4;
-    let f2 = y + 3.0 * x * t2 * z + 3.0 * x * y * y * t4;
-    let f3 = 2.0 * x - 3.0 * x * x * y - x * x * x * z;
-    [f1, f2, f3]
-}`;
+// Compute Jacobian via forward-mode automatic differentiation.
+// No hand-derived partials — the engine traces gradients
+// through the Alpöge map automatically.
+#[wasm_bindgen]
+pub fn jacobian_autodiff(x: f64, y: f64, z: f64) -> Vec<f64> {
+    let (jac, _m) = jacobian(
+        |v: &[DualNumber<f64>]| {
+            let xy = v[0] * v[1];
+            let t1 = DualNumber::constant(1.0) + xy;
+            let t2 = t1 * t1;
+            let t3 = t1 * t2;
+            let t4 = DualNumber::constant(4.0)
+                     + DualNumber::constant(3.0) * xy;
+            let f1 = v[2] * t3 + v[1] * v[1] * t1 * t4;
+            // ... f2, f3 similarly ...
+            vec![f1, f2, f3]
+        },
+        &[x, y, z],
+    );
+    jac
+}
 
-  const batchCode = `// Batch evaluation using ferray vectorized ops
-fn jacobian_eval_batch(flat: Vec<f64>) -> Result<Vec<f64>> {
-    let n = flat.len() / 3;
-    let x = Array::from_vec(Ix1(n), x_col)?;
-    let y = Array::from_vec(Ix1(n), y_col)?;
-    let z = Array::from_vec(Ix1(n), z_col)?;
-
-    let xy  = (&x * &y).unwrap();         // x_i · y_i
-    let t1  = xy.mapv(|v| 1.0 + v);      // 1 + xy
-    let t2  = t1.mapv(|v| v * v);        // (1+xy)^2
-    let t3  = (&t1 * &t2).unwrap();      // (1+xy)^3
-    let t4  = xy.mapv(|v| 4.0 + 3.0*v);  // 4 + 3xy
-
-    let f1 = (&(&z * &t3).unwrap()
-        + &(&(&y*&y).unwrap() * &t1).unwrap()
-            * &t4).unwrap();
-    // ... f2, f3 similarly ...
-    Ok(interleave(f1, f2, f3))
+// Determinant via ferray-linalg
+pub fn jacobian_det(x: f64, y: f64, z: f64) -> f64 {
+    let j = jacobian_autodiff(x, y, z);
+    let mat = Array::from_vec(Ix2([3, 3]), j).unwrap();
+    ferray_linalg::det(&mat).unwrap()
 }`;
 </script>
 
@@ -104,23 +103,21 @@ fn jacobian_eval_batch(flat: Vec<f64>) -> Result<Vec<f64>> {
     <h2 class="h2">⚙️ How it works</h2>
 
     <p class="text-surface-300">
-      The 3D visualizer above renders a wireframe slice of space on the left, and its
-      image under F on the right. Drag to rotate, scroll to zoom. The "fold" in the
-      output is the geometric reason the inverse fails — F squashes two different points
-      onto the same place, like folding a sheet of paper.
+      The Jacobian matrix is computed via <strong>ferray-autodiff</strong> — forward-mode
+      automatic differentiation. The same Alpöge map code runs over
+      <code class="code-block">DualNumber</code> values, which track derivatives alongside
+      regular values. No hand-derived partial derivatives, no finite differences.
+      The determinant uses <strong>ferray-linalg::det</strong> on a 3×3 ferray matrix.
     </p>
 
     <p class="text-surface-300">
-      The Jacobian matrix is computed via central finite differences (h = 10<sup>−6</sup>),
-      then the 3×3 determinant formula is applied. The result rounds to −2.0000 at every
-      sampled point — verified by batch-evaluating 1000 random points through WASM.
+      The wireframe grid transformation uses <strong>ferray-core</strong> Array1 with
+      <code class="code-block">mapv()</code> and elementwise multiplication — all 625 grid points
+      processed in a single WASM call via vectorized ops.
     </p>
 
-    <h3 class="h3 mt-4">The map (Rust)</h3>
+    <h3 class="h3 mt-4">Jacobian via ferray-autodiff</h3>
     <pre class="code-block p-4 overflow-x-auto text-xs"><code>{rustCode}</code></pre>
-
-    <h3 class="h3 mt-4">Batch evaluation with ferray</h3>
-    <pre class="code-block p-4 overflow-x-auto text-xs"><code>{batchCode}</code></pre>
 
     <h3 class="h3 mt-4">Historical context</h3>
     <div class="text-sm text-surface-400 space-y-2">

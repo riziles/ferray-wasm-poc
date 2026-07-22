@@ -12,5 +12,7 @@ ferray-ufunc = { git = "https://github.com/riziles/ferray-riz-dev", branch = "fe
 ferray-stats = { git = "https://github.com/riziles/ferray-riz-dev", branch = "feat/wasm-support" }
 ferray-fft = { git = "https://github.com/riziles/ferray-riz-dev", branch = "feat/wasm-support" }
 ferray-window = { git = "https://github.com/riziles/ferray-riz-dev", branch = "feat/wasm-support" }
+ferray-autodiff = { git = "https://github.com/riziles/ferray-riz-dev", branch = "feat/wasm-support" }
+ferray-linalg = { git = "https://github.com/riziles/ferray-riz-dev", branch = "feat/wasm-support" }
 num-complex = "0.4"
 wasm-bindgen = "0.2"
