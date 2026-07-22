@@ -81,7 +81,7 @@
   <footer class="text-center text-xs text-surface-500 pb-8 space-y-2">
     <div>
       Built with
-      <a href="https://github.com/riziles/ferray-riz-dev" target="_blank" class="text-primary-400 hover:text-primary-300 underline">Ferray</a> +
+      <a href="https://github.com/dollspace-gay/ferray" target="_blank" class="text-primary-400 hover:text-primary-300 underline">Ferray</a> +
       <a href="https://www.rust-lang.org" target="_blank" class="text-primary-400 hover:text-primary-300 underline">Rust</a> +
       <a href="https://webassembly.org" target="_blank" class="text-primary-400 hover:text-primary-300 underline">WASM</a> +
       <a href="https://svelte.dev/docs/kit" target="_blank" class="text-primary-400 hover:text-primary-300 underline">SvelteKit</a> +
