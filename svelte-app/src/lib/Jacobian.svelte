@@ -191,8 +191,8 @@
   function computeDet() {
     const r = wasm.jacobian_det(1.5, 0.3, -.8);
     detVal = r;
-    const p = wasm.jacobian_eval(3, -2, 1);
-    evalResult = `F(3, −2, 1) = (${p[0].toFixed(4)}, ${p[1].toFixed(4)}, ${p[2].toFixed(4)})`;
+    const j = wasm.jacobian_autodiff(3, -2, 1);
+    evalResult = `J(3, −2, 1) = [${j.slice(0, 3).map((v: number) => v.toFixed(4)).join(', ')}; ...]`;
   }
 
   $effect(() => { sliceAxis; slicePos; gridSize; draw(); });

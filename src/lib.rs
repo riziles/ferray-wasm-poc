@@ -320,37 +320,52 @@ pub fn jacobian_eval_batch(flat_points: Vec<f64>) -> Result<Vec<f64>, JsValue> {
     Ok(out)
 }
 
-/// Compute the 3×3 Jacobian matrix analytically at a point.
+/// Compute the 3×3 Jacobian matrix using ferray-autodiff (forward-mode AD).
+/// No hand-derived partials — the autodiff engine traces derivatives through
+/// the Alpöge map automatically.
 /// Returns 9 values row-major: [J11,J12,J13, J21,J22,J23, J31,J32,J33]
 #[wasm_bindgen]
-pub fn jacobian_matrix(x: f64, y: f64, z: f64) -> Vec<f64> {
-    let xy = x * y;
-    let t1 = 1.0 + xy;
-    let t2 = t1 * t1;
-    let t3 = t1 * t2;
-    let t4 = 4.0 + 3.0 * xy;
-    let c7_6 = 7.0 + 6.0 * xy;
+pub fn jacobian_autodiff(x: f64, y: f64, z: f64) -> Vec<f64> {
+    use ferray_autodiff::{jacobian, DualNumber};
 
-    vec![
-        3.0 * y * z * t2 + y.powi(3) * c7_6,
-        3.0 * x * z * t2 + x * y * y * c7_6 + 2.0 * y * t1 * t4,
-        t3,
-        3.0 * z * t2 + 6.0 * x * y * z * t1 + 3.0 * y * y * t4 + 9.0 * x * y.powi(3),
-        1.0 + 6.0 * x * x * z * t1 + 6.0 * x * y * t4 + 9.0 * x * x * y * y,
-        3.0 * x * t2,
-        2.0 - 6.0 * x * y - 3.0 * x * x * z,
-        -3.0 * x * x,
-        -x.powi(3),
-    ]
+    let (jac, _m) = jacobian(
+        |v: &[DualNumber<f64>]| {
+            let x = v[0];
+            let y = v[1];
+            let z = v[2];
+
+            // Same Alpöge map, but operating on DualNumber values.
+            // ferray-autodiff automatically tracks all partial derivatives.
+            let xy = x * y;
+            let t1 = DualNumber::constant(1.0) + xy;
+            let t2 = t1 * t1;
+            let t3 = t1 * t2;
+            let t4 = DualNumber::constant(4.0) + DualNumber::constant(3.0) * xy;
+
+            let f1 = z * t3 + y * y * t1 * t4;
+            let f2 = y + DualNumber::constant(3.0) * x * t2 * z
+                     + DualNumber::constant(3.0) * x * y * y * t4;
+            let f3 = DualNumber::constant(2.0) * x
+                     - DualNumber::constant(3.0) * x * x * y
+                     - x * x * x * z;
+
+            vec![f1, f2, f3]
+        },
+        &[x, y, z],
+    );
+    jac
 }
 
-/// Determinant of the 3×3 Jacobian (≈ −2 for the Alpöge map).
+/// Determinant of the 3×3 Jacobian using ferray-linalg::det.
+/// Should always evaluate to ≈ −2 for the Alpöge map.
 #[wasm_bindgen]
 pub fn jacobian_det(x: f64, y: f64, z: f64) -> f64 {
-    let j = jacobian_matrix(x, y, z);
-    j[0] * (j[4] * j[8] - j[5] * j[7])
-        - j[1] * (j[3] * j[8] - j[5] * j[6])
-        + j[2] * (j[3] * j[7] - j[4] * j[6])
+    use ferray_linalg::det;
+
+    let j_flat = jacobian_autodiff(x, y, z);
+    let j_mat = Array::from_vec(Ix2::new([3, 3]), j_flat)
+        .expect("3×3 matrix always valid");
+    det(&j_mat).unwrap_or(0.0)
 }
 
 /// Sample N random points and verify det(J_F) ≡ −2 using ferray batch.

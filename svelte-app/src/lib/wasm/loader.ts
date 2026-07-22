@@ -9,7 +9,7 @@ export interface WasmApi {
   jacobian_det: WasmModule['jacobian_det'];
   jacobian_eval: WasmModule['jacobian_eval'];
   jacobian_eval_batch: WasmModule['jacobian_eval_batch'];
-  jacobian_matrix: WasmModule['jacobian_matrix'];
+  jacobian_autodiff: WasmModule['jacobian_autodiff'];
   jacobian_verify: WasmModule['jacobian_verify'];
   linspace: WasmModule['linspace'];
   radial_2d: WasmModule['radial_2d'];
@@ -34,7 +34,7 @@ function createApi(mod: WasmModule): WasmApi {
     jacobian_det: mod.jacobian_det,
     jacobian_eval: mod.jacobian_eval,
     jacobian_eval_batch: mod.jacobian_eval_batch,
-    jacobian_matrix: mod.jacobian_matrix,
+    jacobian_autodiff: mod.jacobian_autodiff,
     jacobian_verify: mod.jacobian_verify,
     linspace: mod.linspace,
     radial_2d: mod.radial_2d,
