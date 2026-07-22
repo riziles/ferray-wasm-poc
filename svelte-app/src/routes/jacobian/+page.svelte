@@ -76,10 +76,10 @@ pub fn jacobian_det(x: f64, y: f64, z: f64) -> f64 {
       <span class="term" data-tip="If F turns A into B, the inverse F⁻¹ turns B back into A. A function that's not one-to-one (injective) can't have an inverse, because you wouldn't know which original to go back to.">invert</span>
       it — there exists another polynomial map that undoes it perfectly.
     </p>
-    <div class="bg-surface-800 p-3 rounded text-sm font-mono text-center text-surface-400">
+    <p class="text-surface-400 text-sm pl-4 border-l-2 border-surface-600">
       For one variable this is obvious: if f′(x) = 5 everywhere, then f(x) = 5x + c,
-      and f⁻¹(y) = (y−c)/5.
-    </div>
+      and its inverse is just f<sup>−1</sup>(y) = (y−c)/5.
+    </p>
     <p class="text-surface-300">
       For two variables, mathematicians have been stuck since <strong>1884</strong>.
       It's one of Stephen Smale's
