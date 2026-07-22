@@ -235,7 +235,7 @@
           {collisionResult.startsWith('COLLISION') ? 'text-green-400' : 'text-surface-500'}">
           {collisionResult}</pre>
         {#if collisionResult.startsWith('No collision')}
-          <span class="text-xs text-surface-500 mt-1 block">Best-effort gradient descent — not guaranteed to find all collisions.</span>
+          <span class="text-xs text-surface-500 mt-1 block">Newton's method from 30 seeds — not exhaustive.</span>
         {/if}
       {/if}
     </div>

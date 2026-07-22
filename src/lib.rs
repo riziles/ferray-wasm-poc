@@ -603,52 +603,63 @@ pub fn counterexample_find_collision(params: Vec<f64>) -> Vec<f64> {
         return vec![0.0, 0.0, -0.25, 1.0, -1.5, 6.5, 0.0];
     }
 
-    // Generic search: random restarts + gradient descent
-    for attempt in 0..20 {
+    // Generic search: Newton's method on F(x) = target from multiple seeds.
+    // Pick a random target by evaluating F, then run Newton from different
+    // starting points. Two distinct converged solutions = collision found.
+
+    let target = parametric_map(3.0, -2.0, 1.0, &params);
+    let mut solutions: Vec<[f64; 3]> = Vec::new();
+
+    for attempt in 0..30 {
         let s = (attempt as u64).wrapping_mul(0x9e3779b97f4a7c15);
-        let mut x1 = 10.0 * ((s as f64) / (u64::MAX as f64) - 0.5);
-        let mut y1 = 10.0 * (((s ^ 0xdead) as f64) / (u64::MAX as f64) - 0.5);
-        let mut z1 = 10.0 * (((s ^ 0xbeef) as f64) / (u64::MAX as f64) - 0.5);
-        let mut x2 = x1 + 0.5;
-        let mut y2 = y1 + 0.3;
-        let mut z2 = z1 - 0.4;
+        let mut x = 10.0 * ((s as f64) / (u64::MAX as f64) - 0.5);
+        let mut y = 10.0 * (((s ^ 0xdead) as f64) / (u64::MAX as f64) - 0.5);
+        let mut z = 10.0 * (((s ^ 0xbeef) as f64) / (u64::MAX as f64) - 0.5);
 
-        for _iter in 0..200 {
-            let f1 = parametric_map(x1, y1, z1, &params);
-            let f2 = parametric_map(x2, y2, z2, &params);
-            let dx = f1[0] - f2[0];
-            let dy = f1[1] - f2[1];
-            let dz = f1[2] - f2[2];
-            let dist = (dx * dx + dy * dy + dz * dz).sqrt();
+        // Newton's method: x_{k+1} = x_k - J^{-1} (F(x_k) - target)
+        for _iter in 0..50 {
+            let f = parametric_map(x, y, z, &params);
+            let rx = f[0] - target[0];
+            let ry = f[1] - target[1];
+            let rz = f[2] - target[2];
+            let err = (rx.powi(2) + ry.powi(2) + rz.powi(2)).sqrt();
 
-            if dist < 1e-6 {
-                // Verify the points are actually distinct
-                let dx = x1 - x2;
-                let dy = y1 - y2;
-                let dz = z1 - z2;
-                let input_dist = (dx * dx + dy * dy + dz * dz).sqrt();
-                if input_dist > 0.01 {
-                    return vec![x1, y1, z1, x2, y2, z2, dist];
+            if err < 1e-8 {
+                // Converged — check if distinct from previous solutions
+                let is_new = solutions.iter().all(|sol| {
+                    ((sol[0]-x).powi(2) + (sol[1]-y).powi(2) + (sol[2]-z).powi(2)).sqrt() > 0.01
+                });
+                if is_new {
+                    solutions.push([x, y, z]);
                 }
-                // Points converged to same location — not a real collision
+                if solutions.len() >= 2 {
+                    let a = solutions[0]; let b = solutions[1];
+                    let fa = parametric_map(a[0], a[1], a[2], &params);
+                    let fb = parametric_map(b[0], b[1], b[2], &params);
+                    let dout = ((fa[0]-fb[0]).powi(2) + (fa[1]-fb[1]).powi(2) + (fa[2]-fb[2]).powi(2)).sqrt();
+                    return vec![a[0], a[1], a[2], b[0], b[1], b[2], dout];
+                }
                 break;
             }
 
-            let h = 1e-4;
-            let rate = 0.01;
-            let fx1 = parametric_map(x1 + h, y1, z1, &params);
-            let g1 = ((fx1[0]-f2[0]).powi(2)+(fx1[1]-f2[1]).powi(2)+(fx1[2]-f2[2]).powi(2)).sqrt();
-            x1 -= rate * (g1 - dist) / h;
-            let fy1 = parametric_map(x1, y1 + h, z1, &params);
-            let g2 = ((fy1[0]-f2[0]).powi(2)+(fy1[1]-f2[1]).powi(2)+(fy1[2]-f2[2]).powi(2)).sqrt();
-            y1 -= rate * (g2 - dist) / h;
-            let fz1 = parametric_map(x1, y1, z1 + h, &params);
-            let g3 = ((fz1[0]-f2[0]).powi(2)+(fz1[1]-f2[1]).powi(2)+(fz1[2]-f2[2]).powi(2)).sqrt();
-            z1 -= rate * (g3 - dist) / h;
+            // Finite-difference Jacobian + Cramer's rule to solve JΔ = resid
+            let h = 1e-5;
+            let fx = parametric_map(x + h, y, z, &params);
+            let fy = parametric_map(x, y + h, z, &params);
+            let fz = parametric_map(x, y, z + h, &params);
 
-            x2 += rate * (g1 - dist) / h;
-            y2 += rate * (g2 - dist) / h;
-            z2 += rate * (g3 - dist) / h;
+            let j11 = (fx[0] - f[0]) / h; let j12 = (fy[0] - f[0]) / h; let j13 = (fz[0] - f[0]) / h;
+            let j21 = (fx[1] - f[1]) / h; let j22 = (fy[1] - f[1]) / h; let j23 = (fz[1] - f[1]) / h;
+            let j31 = (fx[2] - f[2]) / h; let j32 = (fy[2] - f[2]) / h; let j33 = (fz[2] - f[2]) / h;
+
+            let det = j11*(j22*j33 - j23*j32) - j12*(j21*j33 - j23*j31) + j13*(j21*j32 - j22*j31);
+            if det.abs() < 1e-10 { break; }
+
+            let dx = (rx*(j22*j33 - j23*j32) - j12*(ry*j33 - j23*rz) + j13*(ry*j32 - j22*rz)) / det;
+            let dy = (j11*(ry*j33 - j23*rz) - rx*(j21*j33 - j23*j31) + j13*(j21*rz - ry*j31)) / det;
+            let dz = (j11*(j22*rz - ry*j32) - j12*(j21*rz - ry*j31) + rx*(j21*j32 - j22*j31)) / det;
+
+            x -= dx; y -= dy; z -= dz;
         }
     }
     vec![]
