@@ -47,6 +47,101 @@ pub fn jacobian_det(x: f64, y: f64, z: f64) -> f64 {
     verified at 40,000 evaluations/second via WASM.
   </p>
 
+  <section class="card card-demo p-6 space-y-4 border-2 border-amber-700/30">
+    <h2 class="h2">📖 How does this all work?</h2>
+
+    <h3 class="h3">🔍 Step 1 — What's a Jacobian?</h3>
+    <p class="text-surface-300">
+      You already know that the <strong>derivative</strong> of f(x) tells you how much the
+      output changes when you nudge the input: if f′(3) = 5, then near x=3 the function
+      stretches the x-axis by a factor of 5.
+    </p>
+    <p class="text-surface-300">
+      A Jacobian is the same idea, but for functions with <em>multiple inputs and outputs</em>.
+      If F(x,y,z) produces three numbers, you need a 3×3
+      <span class="term" data-tip="A grid of numbers showing every partial derivative. Row i, column j = how much output i changes when you wiggle input j.">matrix</span>
+      of all the
+      <span class="term" data-tip="A derivative with respect to one variable while holding the others fixed. Write it as ∂f/∂x.">partial derivatives</span>.
+      That matrix <em>is</em> the Jacobian. Its
+      <span class="term" data-tip="For a 3×3 matrix, a single number that tells you the volume scaling factor of the transformation. Zero means the transformation squishes space flat.">determinant</span>
+      tells you how much the function stretches <em>volume</em> at each point.
+    </p>
+
+    <h3 class="h3">🎯 Step 2 — What did the conjecture claim?</h3>
+    <p class="text-surface-300">
+      The Jacobian <strong>conjecture</strong> said: if a
+      <span class="term" data-tip="A function like F(x,y,z) = (x²+y, z³−x) where every output is a polynomial — just multiplication, addition, and powers. No division, no roots, no trig.">polynomial map</span>
+      has a Jacobian determinant that's the <em>same nonzero constant everywhere</em>,
+      then you can always
+      <span class="term" data-tip="If F turns A into B, the inverse F⁻¹ turns B back into A. A function that's not one-to-one (injective) can't have an inverse, because you wouldn't know which original to go back to.">invert</span>
+      it — there exists another polynomial map that undoes it perfectly.
+    </p>
+    <div class="bg-surface-800 p-3 rounded text-sm font-mono text-center text-surface-400">
+      For one variable this is obvious: if f′(x) = 5 everywhere, then f(x) = 5x + c,
+      and f⁻¹(y) = (y−c)/5.
+    </div>
+    <p class="text-surface-300">
+      For two variables, mathematicians have been stuck since <strong>1884</strong>.
+      It's one of Stephen Smale's
+      <span class="term" data-tip="In 1998, the Fields Medalist Stephen Smale published a list of 18 unsolved problems he thought would be solved in the 21st century. The Jacobian conjecture was #16.">"Mathematical Problems for the Next Century."</span>
+    </p>
+
+    <h3 class="h3">💥 Step 3 — The counterexample (July 19, 2026)</h3>
+    <p class="text-surface-300">
+      In three variables, the conjecture is now <strong>false</strong>. The Alpöge map has
+      Jacobian determinant
+      <span class="term" data-tip="det(J_F) = −2 means the transformation flips space (the minus sign) and doubles its volume at every single point. The same number everywhere — just what the conjecture's premise requires!">−2 at every point</span>
+      — constant and nonzero! But look:
+    </p>
+
+    <div class="bg-green-900/20 border border-green-800/40 p-4 rounded space-y-1">
+      <div class="font-mono text-sm">
+        <span class="text-blue-400">F(0, 0, −¼)</span> =
+        <span class="text-green-400">(−¼, 0, 0)</span>
+      </div>
+      <div class="font-mono text-sm">
+        <span class="text-amber-400">F(1, −1.5, 6.5)</span> =
+        <span class="text-green-400">(−¼, 0, 0)</span>
+      </div>
+      <div class="text-surface-400 text-xs mt-2">
+        Two <strong>different</strong> inputs land on the <strong>same</strong> output.
+        If someone hands you the output (−¼, 0, 0), you can't know whether the original
+        was (0, 0, −¼) or (1, −1.5, 6.5). The function
+        <span class="term" data-tip="Injective = one-to-one. Every output comes from exactly one input. If two different inputs give the same output, the function is not injective and cannot have an inverse.">isn't injective</span>,
+        so no inverse exists — the conjecture fails for 3+ variables.
+      </div>
+    </div>
+
+    <p class="text-surface-300 mt-4">
+      <strong>Why doesn't the constant Jacobian prevent this?</strong> The constant −2
+      only guarantees that the map <em>locally</em> behaves like a flipped, doubled copy
+      of space everywhere. But it doesn't prevent global "folds" — like wrapping a sheet
+      around itself. The visualizer above shows the fold: drag to rotate and you'll see
+      the output grid overlaps itself.
+    </p>
+
+    <details class="mt-4">
+      <summary class="cursor-pointer text-sm text-surface-500 hover:text-surface-300">
+        📐 Show the full polynomial map and Jacobian matrix
+      </summary>
+      <div class="mt-3 space-y-3">
+        <p class="text-sm text-surface-400">The Alpöge map (2026):</p>
+        <div class="bg-surface-800 p-3 rounded font-mono text-xs space-y-1">
+          <div>F<sub>1</sub>(x, y, z) = z(1 + xy)³ + y²(1 + xy)(4 + 3xy)</div>
+          <div>F<sub>2</sub>(x, y, z) = y + 3x(1 + xy)²z + 3xy²(4 + 3xy)</div>
+          <div>F<sub>3</sub>(x, y, z) = 2x − 3x²y − x³z</div>
+        </div>
+        <p class="text-sm text-surface-400">Jacobian matrix J =</p>
+        <div class="bg-surface-800 p-3 rounded font-mono text-xs">
+          | ∂F₁/∂x &nbsp;∂F₁/∂y &nbsp;∂F₁/∂z |<br/>
+          | ∂F₂/∂x &nbsp;∂F₂/∂y &nbsp;∂F₂/∂z |<br/>
+          | ∂F₃/∂x &nbsp;∂F₃/∂y &nbsp;∂F₃/∂z |
+        </div>
+        <p class="text-sm text-surface-400">det(J) = −2 (verified at every sample point in the demo)</p>
+      </div>
+    </details>
+  </section>
+
   <Jacobian {wasm} />
 
   <section class="card card-demo p-6 space-y-4">
