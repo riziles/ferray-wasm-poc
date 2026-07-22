@@ -510,6 +510,8 @@ fn parametric_map(x: f64, y: f64, z: f64, p: &[f64]) -> [f64; 3] {
 }
 
 /// Score a parameter set: sample N random points, compute det(J_F) at each.
+/// Uses ferray-autodiff + ferray-linalg for each Jacobian determinant,
+/// then ferray-stats (via ferray-core arrays) for batch statistics.
 /// Returns [mean_det, std_dev, min_det, max_det, sample1_det, sample2_det, ...]
 #[wasm_bindgen]
 pub fn counterexample_score(params: Vec<f64>, num_samples: usize) -> Result<Vec<f64>, JsValue> {
@@ -517,7 +519,7 @@ pub fn counterexample_score(params: Vec<f64>, num_samples: usize) -> Result<Vec<
         return Ok(vec![0.0, 0.0, 0.0, 0.0]);
     }
 
-    // Deterministic pseudo-random sampling
+    // Compute Jacobian determinants (one per point via ferray-autodiff)
     let mut dets = Vec::with_capacity(num_samples);
     for i in 0..num_samples {
         let s = (i as u64).wrapping_mul(0x9e3779b97f4a7c15);
@@ -527,14 +529,25 @@ pub fn counterexample_score(params: Vec<f64>, num_samples: usize) -> Result<Vec<
         dets.push(jacobian_det_parametric(x, y, z, &params));
     }
 
-    let mean = dets.iter().sum::<f64>() / num_samples as f64;
-    let variance = dets.iter().map(|&d| (d - mean).powi(2)).sum::<f64>() / num_samples as f64;
-    let std_dev = variance.sqrt();
-    let min_det = dets.iter().cloned().fold(f64::INFINITY, f64::min);
-    let max_det = dets.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+    // Batch statistics via ferray-core Array1 + ferray-stats reductions
+    let arr = Array::from_vec(Ix1::new([num_samples]), dets)
+        .map_err(|e| JsValue::from_str(&format!("{:?}", e)))?;
+
+    let mean = ferray_stats::mean(&arr, None)
+        .map_err(|e| JsValue::from_str(&format!("{:?}", e)))?
+        .iter().next().copied().unwrap_or(0.0);
+    let std_dev = ferray_stats::std_(&arr, None, 0)
+        .map_err(|e| JsValue::from_str(&format!("{:?}", e)))?
+        .iter().next().copied().unwrap_or(0.0);
+    let min_det = ferray_stats::min(&arr, None)
+        .map_err(|e| JsValue::from_str(&format!("{:?}", e)))?
+        .iter().next().copied().unwrap_or(0.0);
+    let max_det = ferray_stats::max(&arr, None)
+        .map_err(|e| JsValue::from_str(&format!("{:?}", e)))?
+        .iter().next().copied().unwrap_or(0.0);
 
     let mut result = vec![mean, std_dev, min_det, max_det];
-    result.extend_from_slice(&dets);
+    result.extend(arr.iter().copied().collect::<Vec<_>>());
     Ok(result)
 }
 
