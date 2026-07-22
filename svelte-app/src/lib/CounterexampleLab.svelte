@@ -128,7 +128,8 @@
     <!-- Collision search -->
     <div class="w-64">
       <button class="btn preset-tonal-warning w-full text-xs" onclick={findCollision}
-        disabled={searching || score.constancy < 0.99}>
+        disabled={searching || score.constancy < 0.99}
+        title="Search for two distinct points (x₁,y₁,z₁) ≠ (x₂,y₂,z₂) that map to the same output under F">
         {searching ? '🔍 Searching...' : '🔍 Find Collision'}
       </button>
       {#if collisionResult}
