@@ -10,6 +10,7 @@
   import WindowGallery from '$lib/WindowGallery.svelte';
   import Heatmap from '$lib/Heatmap.svelte';
   import Jacobian from '$lib/Jacobian.svelte';
+  import CounterexampleLab from '$lib/CounterexampleLab.svelte';
   import TechStack from '$lib/TechStack.svelte';
 
   const getWasm = getContext<() => WasmApi>('wasm');
@@ -24,6 +25,13 @@
       <h2 class="h2 mb-4 cursor-pointer">🧮 Jacobian Conjecture Counterexample <span class="badge preset-filled-error text-xs">NEW</span></h2>
     </a>
     <Jacobian {wasm} />
+  </section>
+
+  <section class="group/demo border border-amber-700/30 rounded-lg p-4 bg-amber-950/5">
+    <a href="{base}/counterexample-lab" data-sveltekit-prefetch class="block hover:text-primary-400 transition-colors">
+      <h2 class="h2 mb-4 cursor-pointer">🔬 Counterexample Lab <span class="badge preset-filled-warning text-xs">NEW</span></h2>
+    </a>
+    <CounterexampleLab {wasm} />
   </section>
 
   <section class="group/demo">

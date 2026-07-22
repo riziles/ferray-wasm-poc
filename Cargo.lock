@@ -402,6 +402,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "ferray-random"
+version = "0.5.0"
+source = "git+https://github.com/riziles/ferray-riz-dev?branch=feat%2Fwasm-support#93fda6c26be9bd72279678fc36fa09d73da7c105"
+dependencies = [
+ "ferray-core",
+ "ferray-linalg",
+ "getrandom 0.4.3",
+ "rayon",
+]
+
+[[package]]
 name = "ferray-stats"
 version = "0.5.0"
 source = "git+https://github.com/riziles/ferray-riz-dev?branch=feat%2Fwasm-support#93fda6c26be9bd72279678fc36fa09d73da7c105"
@@ -436,6 +447,7 @@ dependencies = [
  "ferray-core",
  "ferray-fft",
  "ferray-linalg",
+ "ferray-random",
  "ferray-stats",
  "ferray-ufunc",
  "ferray-window",
@@ -620,8 +632,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "300e883d756b2e4ec94e02791f39b04b522276138852cfc41d9fb7e904106099"
 dependencies = [
  "cfg-if",
+ "js-sys",
  "libc",
  "r-efi 6.0.0",
+ "wasm-bindgen",
 ]
 
 [[package]]

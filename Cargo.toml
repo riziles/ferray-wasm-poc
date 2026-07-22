@@ -14,5 +14,6 @@ ferray-fft = { git = "https://github.com/riziles/ferray-riz-dev", branch = "feat
 ferray-window = { git = "https://github.com/riziles/ferray-riz-dev", branch = "feat/wasm-support" }
 ferray-autodiff = { git = "https://github.com/riziles/ferray-riz-dev", branch = "feat/wasm-support" }
 ferray-linalg = { git = "https://github.com/riziles/ferray-riz-dev", branch = "feat/wasm-support" }
+ferray-random = { git = "https://github.com/riziles/ferray-riz-dev", branch = "feat/wasm-support" }
 num-complex = "0.4"
 wasm-bindgen = "0.2"
