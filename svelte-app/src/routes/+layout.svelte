@@ -37,7 +37,7 @@
   </main>
 {:else}
   <main class="min-h-screen bg-surface-900">
-    {#if page.url.pathname !== base + '/' && page.url.pathname !== base}}
+    {#if page.url.pathname !== base + '/' && page.url.pathname !== base}
       <nav class="border-b border-surface-700 bg-surface-950/50 backdrop-blur sticky top-0 z-10">
         <div class="container mx-auto px-4 py-3 flex items-center gap-4">
           <a href="{base}/" class="text-sm text-surface-400 hover:text-primary-400 transition-colors">
