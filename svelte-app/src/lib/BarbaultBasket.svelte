@@ -15,6 +15,11 @@
   let zoom = $state(1.0);
   let animating = $state(false);
   let animFrame: ReturnType<typeof requestAnimationFrame> | null = null;
+  let fastForwarding = $state(false);
+  let ffYear = $state(2026);
+  let ffBestIdx = $state(Infinity);
+  let ffBestDate = $state('');
+  let ffResult = $state('');
 
   const ZODIAC = ['♈ Aries', '♉ Tau', '♊ Gem', '♋ Can', '♌ Leo', '♍ Vir',
     '♎ Lib', '♏ Sco', '♐ Sag', '♑ Cap', '♒ Aqu', '♓ Pis'];
@@ -220,6 +225,67 @@
     if (animFrame) cancelAnimationFrame(animFrame);
   }
 
+  async function fastForwardToNextBasket() {
+    if (!wasm) return;
+    fastForwarding = true;
+    ffResult = '';
+    ffBestIdx = Infinity;
+    ffBestDate = '';
+
+    const startDate = new Date(date);
+    const d = new Date(startDate);
+    let bestIdx = Infinity;
+    let bestDate = '';
+
+    // Scan ~500 years at 6-month intervals
+    const totalSteps = 1000;
+    const stepDays = Math.round((365.25 * 500) / totalSteps);
+
+    for (let i = 0; i < totalSteps; i++) {
+      if (!fastForwarding) return;
+
+      d.setDate(d.getDate() + stepDays);
+      const ds = d.toISOString().slice(0, 10);
+
+      // Compute positions and Barbault index
+      let idx: number;
+      try {
+        const pos = wasm.planet_positions(ds);
+        const lons = pos.filter((_, j) => j % 2 === 0);
+        idx = wasm.barbault_index(lons);
+      } catch { break; }
+
+      if (idx < bestIdx) {
+        bestIdx = idx;
+        bestDate = ds;
+      }
+
+      // Update display every 10 steps for performance
+      if (i % 10 === 0 || i === totalSteps - 1) {
+        date = ds;
+        barbaultIdx = idx;
+        positions = wasm.planet_positions(ds);
+        ffYear = d.getFullYear();
+        ffBestIdx = bestIdx;
+        ffBestDate = bestDate;
+        requestAnimationFrame(draw);
+        await new Promise(r => setTimeout(r, 30));
+      }
+    }
+
+    // Show result
+    fastForwarding = false;
+    if (bestIdx < 200) {
+      ffResult = `Found next basket around ${bestDate} (index ${bestIdx.toFixed(0)}°)`;
+    } else {
+      ffResult = `No tight cluster found within 500 years. Best: ${bestDate} (index ${bestIdx.toFixed(0)}°)`;
+    }
+  }
+
+  function stopFastForward() {
+    fastForwarding = false;
+  }
+
   onMount(() => {
     compute();
     requestAnimationFrame(draw);
@@ -251,9 +317,24 @@
     {:else}
       <button class="btn preset-tonal text-xs" onclick={startAnimation}>▶ Play (10d steps)</button>
     {/if}
+    {#if fastForwarding}
+      <button class="btn preset-filled-warning text-xs animate-pulse" onclick={stopFastForward}>⏹ Stop FF</button>
+    {:else}
+      <button class="btn preset-tonal text-xs" onclick={fastForwardToNextBasket} title="Scan 500 years to find the next basket">⏩ Next Basket</button>
+    {/if}
   </div>
 
   <canvas bind:this={canvas} class="w-full rounded" style="height:500px;background:#0f172a"></canvas>
+
+  {#if fastForwarding}
+    <div class="text-xs text-surface-400 text-center">
+      ⏩ Scanning… Year {ffYear} · Best so far: {ffBestDate} (index {ffBestIdx.toFixed(0)}°)
+    </div>
+  {:else if ffResult}
+    <div class="text-xs text-center {ffResult.includes('Found') ? 'text-green-400' : 'text-surface-400'}">
+      {ffResult}
+    </div>
+  {/if}
 
   <div class="flex gap-4 items-center flex-wrap">
     <div class="flex-1 bg-surface-800 p-3 rounded space-y-1">
