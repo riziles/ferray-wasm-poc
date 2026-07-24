@@ -6,7 +6,7 @@ A signal processing and mathematical demo using [Ferray](https://github.com/doll
 
 ## Demos
 
-Nine interactive demos running entirely in a ~731 KB WASM binary:
+Ten interactive demos running entirely in a ~731 KB WASM binary:
 
 | Demo | Crates used | Description |
 |---|---|---|
@@ -18,6 +18,7 @@ Nine interactive demos running entirely in a ~731 KB WASM binary:
 | 🔥 2D Function Heatmap | `ferray-core`, `ferray-ufunc` | 200×200 canvas `ImageData`, 5 function types |
 | 🧮 Jacobian Conjecture | `ferray-autodiff`, `ferray-linalg`, `ferray-core` | 3D wireframe of Alpöge counterexample (2026) |
 | 🔬 Counterexample Lab | `ferray-autodiff`, `ferray-linalg`, `ferray-random`, `ferray-stats`, `ferray-core` | Interactive parameter search + custom expression parser |
+| 🪐 Barbault Basket | — (scalar trig) | Ecliptic wheel + Barbault Cyclic Index, Kepler solver |
 
 ## Architecture
 

@@ -2,17 +2,12 @@
   import { getContext } from 'svelte';
   import BarbaultBasket from '$lib/BarbaultBasket.svelte';
   import type { WasmApi } from '$lib/wasm/loader';
-  import { base } from '$app/paths';
 
   const getWasm = getContext<() => WasmApi>('wasm');
   const wasm = $derived(getWasm());
 </script>
 
 <main>
-  <nav>
-    <a href="{base}/" class="text-primary-400 hover:text-primary-300 text-sm">← Ferray × WASM</a>
-  </nav>
-
   <div class="space-y-6">
     <div>
       <h1 class="text-3xl font-bold">🪐 Barbault Basket</h1>
