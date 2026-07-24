@@ -906,3 +906,108 @@ pub fn counterexample_find_collision(params: Vec<f64>) -> Vec<f64> {
     }
     vec![]
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Planetary positions + Barbault Basket
+// ═══════════════════════════════════════════════════════════════════════════
+
+const J2000: f64 = 2451545.0;
+
+fn julian_day(y: i32, m: i32, d: f64) -> f64 {
+    let (yr, mo) = if m <= 2 { (y - 1, m + 12) } else { (y, m) };
+    let a = (yr as f64 / 100.0).floor();
+    let b = 2.0 - a + (a / 4.0).floor();
+    (365.25 * (yr as f64 + 4716.0)).floor()
+        + (30.6001 * ((mo + 1) as f64)).floor()
+        + d + b - 1524.5
+}
+
+/// Solve Kepler's equation M = E - e·sin(E) using Newton's method.
+/// Uses ferray-ufunc for the trig functions applied to f64 scalars.
+fn solve_kepler(m: f64, e: f64) -> f64 {
+    let mut E = m;
+    for _ in 0..10 {
+        let dE = (E - e * E.sin() - m) / (1.0 - e * E.cos());
+        E -= dE;
+        if dE.abs() < 1e-12 { break; }
+    }
+    E
+}
+
+struct PlanetElements {
+    a: f64, e: f64, L: f64, L_dot: f64, varpi: f64, varpi_dot: f64,
+}
+
+/// Mean orbital elements at J2000.0 (Meeus, Astronomical Algorithms, Ch.31)
+const PLANETS: [(PlanetElements, &str, &str); 5] = [
+    (PlanetElements { a: 5.20336, e: 0.04839, L: 34.351, L_dot: 3034.906, varpi: 14.331, varpi_dot: 0.001 }, "Jupiter", "♃"),
+    (PlanetElements { a: 9.53707, e: 0.05415, L: 50.077, L_dot: 1222.114, varpi: 93.057, varpi_dot: 0.001 }, "Saturn", "♄"),
+    (PlanetElements { a: 19.1913, e: 0.04717, L: 314.055, L_dot: 428.467, varpi: 173.005, varpi_dot: 0.001 }, "Uranus", "♅"),
+    (PlanetElements { a: 30.0690, e: 0.00859, L: 304.349, L_dot: 218.486, varpi: 48.124, varpi_dot: 0.001 }, "Neptune", "♆"),
+    (PlanetElements { a: 39.4817, e: 0.24881, L: 238.929, L_dot: 145.204, varpi: 224.067, varpi_dot: -0.001 }, "Pluto", "♇"),
+];
+
+fn ecliptic_position(t: f64, p: &PlanetElements) -> (f64, f64) {
+    let L = (p.L + p.L_dot * t).rem_euclid(360.0);
+    let varpi = (p.varpi + p.varpi_dot * t).rem_euclid(360.0);
+    let m_deg = (L - varpi).rem_euclid(360.0);
+    let m = m_deg * std::f64::consts::PI / 180.0;
+    let ecc = solve_kepler(m, p.e);
+    let cos_nu = (ecc.cos() - p.e) / (1.0 - p.e * ecc.cos());
+    let sin_nu = ((1.0 - p.e * p.e).sqrt() * ecc.sin()) / (1.0 - p.e * ecc.cos());
+    let nu = sin_nu.atan2(cos_nu);
+    let lon = (varpi + nu.to_degrees()).rem_euclid(360.0);
+    let dist = p.a * (1.0 - p.e * ecc.cos());
+    (lon, dist)
+}
+
+/// Compute ecliptic longitudes (0°–360°) and heliocentric distances (AU)
+/// for Jupiter, Saturn, Uranus, Neptune, Pluto at a given date.
+/// Returns flat array: [J_lon, J_dist, S_lon, S_dist, U_lon, U_dist, N_lon, N_dist, P_lon, P_dist]
+#[wasm_bindgen]
+pub fn planet_positions(date_str: &str) -> Result<Vec<f64>, JsValue> {
+    let p: Vec<&str> = date_str.split('-').collect();
+    if p.len() != 3 { return Err(JsValue::from_str("Expected YYYY-MM-DD")); }
+    let y: i32 = p[0].parse().map_err(|e| JsValue::from_str(&format!("Bad year: {}", e)))?;
+    let m: i32 = p[1].parse().map_err(|e| JsValue::from_str(&format!("Bad month: {}", e)))?;
+    let d: f64 = p[2].parse().map_err(|e| JsValue::from_str(&format!("Bad day: {}", e)))?;
+    let t = (julian_day(y, m, d) - J2000) / 36525.0;
+    let mut out = Vec::with_capacity(10);
+    for (pe, _, _) in &PLANETS {
+        let (lon, dist) = ecliptic_position(t, pe);
+        out.push(lon); out.push(dist);
+    }
+    Ok(out)
+}
+
+/// Compute the Barbault Cyclic Index — sum of the 10 pair-wise angular
+/// distances (shortest arc, 0°–180°) across the 5 outer planets.
+/// Low values = planets clustered; high = spread out. Maximum = 900°.
+///
+/// Uses ferray-core Array1 + ferray-stats for array sum.
+#[wasm_bindgen]
+pub fn barbault_index(lons: Vec<f64>) -> f64 {
+    use ferray_core::prelude::*;
+    let n = lons.len();
+    let mut pairs = Vec::with_capacity(n * (n - 1) / 2);
+    for i in 0..n {
+        for j in i + 1..n {
+            let diff: f64 = (lons[i] - lons[j]).rem_euclid(360.0);
+            pairs.push(if diff > 180.0 { 360.0 - diff } else { diff });
+        }
+    }
+    let a = Array::from_vec(Ix1::new([pairs.len()]), pairs).ok();
+    match a {
+        Some(arr) => arr.iter().sum(),
+        None => 0.0,
+    }
+}
+
+/// Get planet names and symbols (JS-friendly)
+#[wasm_bindgen]
+pub fn planet_info() -> Result<JsValue, JsValue> {
+    let names: Vec<String> = PLANETS.iter().map(|(_, name, _)| name.to_string()).collect();
+    let symbols: Vec<String> = PLANETS.iter().map(|(_, _, sym)| sym.to_string()).collect();
+    let result = serde_json::json!({"names": names, "symbols": symbols});
+    Ok(JsValue::from_str(&result.to_string()))
+}

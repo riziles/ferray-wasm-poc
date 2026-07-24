@@ -14,6 +14,9 @@ export interface WasmApi {
   custom_score: WasmModule['custom_score'];
   counterexample_score: WasmModule['counterexample_score'];
   counterexample_find_collision: WasmModule['counterexample_find_collision'];
+  planet_positions: WasmModule['planet_positions'];
+  barbault_index: WasmModule['barbault_index'];
+  planet_info: WasmModule['planet_info'];
   linspace: WasmModule['linspace'];
   radial_2d: WasmModule['radial_2d'];
   sine_wave: WasmModule['sine_wave'];
@@ -42,6 +45,9 @@ function createApi(mod: WasmModule): WasmApi {
     custom_score: mod.custom_score,
     counterexample_score: mod.counterexample_score,
     counterexample_find_collision: mod.counterexample_find_collision,
+    planet_positions: mod.planet_positions,
+    barbault_index: mod.barbault_index,
+    planet_info: mod.planet_info,
     linspace: mod.linspace,
     radial_2d: mod.radial_2d,
     sine_wave: mod.sine_wave,

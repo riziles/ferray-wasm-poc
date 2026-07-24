@@ -11,6 +11,7 @@
   import Heatmap from '$lib/Heatmap.svelte';
   import Jacobian from '$lib/Jacobian.svelte';
   import CounterexampleLab from '$lib/CounterexampleLab.svelte';
+  import BarbaultBasket from '$lib/BarbaultBasket.svelte';
   import TechStack from '$lib/TechStack.svelte';
 
   const getWasm = getContext<() => WasmApi>('wasm');
@@ -74,6 +75,13 @@
       <h2 class="h2 mb-4 cursor-pointer">🔥 2D Function Heatmap</h2>
     </a>
     <Heatmap {wasm} />
+  </section>
+
+  <section class="group/demo">
+    <a href="{base}/barbault-basket" data-sveltekit-prefetch class="block hover:text-primary-400 transition-colors">
+      <h2 class="h2 mb-4 cursor-pointer">🪐 Barbault Basket <span class="badge preset-filled-primary text-xs">NEW</span></h2>
+    </a>
+    <BarbaultBasket {wasm} />
   </section>
 
   <TechStack />
