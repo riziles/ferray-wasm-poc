@@ -227,6 +227,7 @@
 
   // Redraw on zoom/resize via effect
   $effect(() => {
+    if (!wasm) return;
     void zoom;
     requestAnimationFrame(draw);
   });
