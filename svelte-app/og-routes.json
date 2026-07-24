@@ -2,23 +2,23 @@
   "index": {
     "og:title": "Ferray × WASM — Rust NumPy in the Browser",
     "og:description": "10 interactive demos: FFT, Gaussian blur, Barbault Basket planetary chart, Jacobian conjecture counterexample, and more — all powered by Ferray compiled to WebAssembly.",
-    "og:image": "https://riziles.github.io/ferray-wasm-poc/og-image.svg",
+    "og:image": "https://riziles.github.io/ferray-wasm-poc/og-image.png",
     "og:url": "https://riziles.github.io/ferray-wasm-poc/",
     "og:type": "website",
     "twitter:card": "summary_large_image",
     "twitter:title": "Ferray × WASM — Rust NumPy in the Browser",
     "twitter:description": "10 interactive demos powered by Ferray compiled to WebAssembly.",
-    "twitter:image": "https://riziles.github.io/ferray-wasm-poc/og-image.svg"
+    "twitter:image": "https://riziles.github.io/ferray-wasm-poc/og-image.png"
   },
   "barbault-basket": {
     "og:title": "🪐 Barbault Basket — Planetary Ecliptic Chart | Ferray × WASM",
     "og:description": "Watch outer planets form the rare Barbault Basket alignment around July 2026. Computed via Kepler's equation in Rust WASM.",
-    "og:image": "https://riziles.github.io/ferray-wasm-poc/og-barbault.svg",
+    "og:image": "https://riziles.github.io/ferray-wasm-poc/og-barbault.png",
     "og:url": "https://riziles.github.io/ferray-wasm-poc/barbault-basket",
     "og:type": "website",
     "twitter:card": "summary_large_image",
     "twitter:title": "🪐 Barbault Basket — Planetary Ecliptic Chart | Ferray × WASM",
     "twitter:description": "Watch outer planets form the rare Barbault Basket alignment around July 2026.",
-    "twitter:image": "https://riziles.github.io/ferray-wasm-poc/og-barbault.svg"
+    "twitter:image": "https://riziles.github.io/ferray-wasm-poc/og-barbault.png"
   }
 }
