@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build && node scripts/inject-og.js",
+    "build": "vite build && node scripts/svg2png.js og-image.svg og-barbault.svg && node scripts/inject-og.js",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json"
   },
@@ -16,6 +16,7 @@
     "@sveltejs/kit": "^2.69.3",
     "@tsconfig/svelte": "^5.0.8",
     "@types/node": "^24.13.2",
+    "sharp": "^0.35.3",
     "svelte": "^5.56.4",
     "svelte-check": "^4.7.1",
     "typescript": "~6.0.2",
