@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e1b4b"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <text x="600" y="180" text-anchor="middle" font-family="system-ui,sans-serif" font-size="120" fill="#fbbf24">🧪</text>
+  <text x="600" y="340" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="bold" font-size="64" fill="#e2e8f0">Ferray × WASM</text>
+  <text x="600" y="410" text-anchor="middle" font-family="system-ui,sans-serif" font-size="28" fill="#94a3b8">Rust NumPy in the Browser</text>
+  <text x="600" y="480" text-anchor="middle" font-family="monospace" font-size="22" fill="#60a5fa">10 demos · FFT · Autodiff · Barbault Basket</text>
+  <text x="600" y="570" text-anchor="middle" font-family="monospace" font-size="18" fill="#475569">riziles.github.io/ferray-wasm-poc</text>
+</svg>
