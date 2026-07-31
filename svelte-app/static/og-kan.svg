@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e1b4b"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Title -->
+  <text x="70" y="100" font-family="system-ui,sans-serif" font-weight="bold" font-size="50" fill="#e2e8f0">Kolmogorov–Arnold Network</text>
+  <text x="70" y="140" font-family="system-ui,sans-serif" font-size="24" fill="#94a3b8">B-Spline Edge Functions · Trained Live in Your Browser</text>
+
+  <!-- Spline panel: the signature KAN visual — every edge is a learnable curve -->
+  <rect x="70" y="190" width="560" height="370" rx="12" fill="#0f172a" stroke="#334155" stroke-width="2"/>
+  <text x="110" y="212" font-family="monospace" font-size="14" fill="#475569">learned edge functions φ(x)</text>
+
+  <!-- grid bounds at ±1 (dashed) -->
+  <line x1="250" y1="222" x2="250" y2="530" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <line x1="450" y1="222" x2="450" y2="530" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <line x1="110" y1="375" x2="590" y2="375" stroke="#1e293b" stroke-width="1.5"/>
+  <text x="250" y="548" text-anchor="middle" font-family="monospace" font-size="13" fill="#64748b">−1</text>
+  <text x="450" y="548" text-anchor="middle" font-family="monospace" font-size="13" fill="#64748b">+1</text>
+
+  <!-- x→hidden splines (cyan) -->
+  <path d="M110,400 C190,340 260,430 350,375 C440,320 520,420 590,375" fill="none" stroke="#22d3ee" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M110,260 C200,300 250,380 330,385 C410,390 470,300 590,285" fill="none" stroke="#22d3ee" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M110,330 C220,320 300,290 400,300 C480,308 540,315 590,320" fill="none" stroke="#22d3ee" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M110,520 C180,500 240,430 320,425 C400,420 460,500 590,500" fill="none" stroke="#22d3ee" stroke-width="3.5" stroke-linecap="round"/>
+
+  <!-- y→hidden splines (amber) -->
+  <path d="M110,420 C190,470 260,360 350,375 C440,390 520,340 590,350" fill="none" stroke="#fbbf24" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M110,300 C170,270 210,340 290,340 C370,340 420,260 500,250 C530,245 560,250 590,255" fill="none" stroke="#fbbf24" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M110,470 C170,440 220,490 300,475 C380,460 430,410 500,410 C540,410 570,415 590,418" fill="none" stroke="#fbbf24" stroke-width="3.5" stroke-linecap="round"/>
+
+  <!-- hidden→output splines (violet) -->
+  <path d="M110,380 C200,300 300,270 400,320 C460,350 520,380 590,410" fill="none" stroke="#a78bfa" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M110,240 C200,250 300,300 400,370 C450,405 520,450 590,470" fill="none" stroke="#a78bfa" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M110,350 C210,340 310,360 410,355 C470,352 530,348 590,345" fill="none" stroke="#a78bfa" stroke-width="3.5" stroke-linecap="round"/>
+
+  <!-- Legend -->
+  <circle cx="112" cy="242" r="4" fill="#22d3ee"/><text x="126" y="247" font-family="monospace" font-size="14" fill="#94a3b8">x→hidden</text>
+  <circle cx="222" cy="242" r="4" fill="#fbbf24"/><text x="236" y="247" font-family="monospace" font-size="14" fill="#94a3b8">y→hidden</text>
+  <circle cx="332" cy="242" r="4" fill="#a78bfa"/><text x="346" y="247" font-family="monospace" font-size="14" fill="#94a3b8">hidden→out</text>
+
+  <!-- Right column: description -->
+  <text x="700" y="240" font-family="system-ui,sans-serif" font-weight="bold" font-size="26" fill="#e2e8f0">What you'll see</text>
+
+  <circle cx="704" cy="292" r="5" fill="#22d3ee"/>
+  <text x="722" y="298" font-family="system-ui,sans-serif" font-size="19" fill="#cbd5e1">Every edge is a learnable univariate</text>
+  <text x="722" y="326" font-family="monospace" font-size="21" fill="#7dd3fc">φ(x) = silu(x) + Σ cᵢ Bᵢ(x)</text>
+
+  <circle cx="704" cy="372" r="5" fill="#fbbf24"/>
+  <text x="722" y="378" font-family="system-ui,sans-serif" font-size="19" fill="#cbd5e1">Trained live in WASM — splines morph</text>
+  <text x="722" y="404" font-family="system-ui,sans-serif" font-size="19" fill="#cbd5e1">into shape at ~40 fps, full-batch Adam</text>
+
+  <circle cx="704" cy="452" r="5" fill="#a78bfa"/>
+  <text x="722" y="458" font-family="system-ui,sans-serif" font-size="19" fill="#cbd5e1">Fit 6 targets: wavy exp · product x·y ·</text>
+  <text x="722" y="484" font-family="system-ui,sans-serif" font-size="19" fill="#cbd5e1">saddle · ripples · gaussian · rings</text>
+
+  <circle cx="704" cy="532" r="5" fill="#34d399"/>
+  <text x="722" y="538" font-family="system-ui,sans-serif" font-size="19" fill="#cbd5e1">Kolmogorov–Arnold theorem: univariate</text>
+  <text x="722" y="564" font-family="system-ui,sans-serif" font-size="19" fill="#cbd5e1">functions + addition can build any f(x,y)</text>
+
+  <text x="600" y="600" text-anchor="middle" font-family="monospace" font-size="16" fill="#7c8ba1">riziles.github.io/ferray-wasm-poc/kan</text>
+</svg>

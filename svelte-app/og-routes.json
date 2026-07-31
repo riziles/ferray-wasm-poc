@@ -20,5 +20,16 @@
     "twitter:title": "🪐 Barbault Basket — Planetary Ecliptic Chart | Ferray × WASM",
     "twitter:description": "Watch outer planets form the rare Barbault Basket alignment around July 2026.",
     "twitter:image": "https://riziles.github.io/ferray-wasm-poc/og-barbault.png"
+  },
+  "kan": {
+    "og:title": "🧠 Kolmogorov–Arnold Network — Live KAN Training | Ferray × WASM",
+    "og:description": "Watch a KAN learn 2D functions in your browser: every edge is a learnable B-spline. Trained live in Rust → WASM with full-batch Adam.",
+    "og:image": "https://riziles.github.io/ferray-wasm-poc/og-kan.png",
+    "og:url": "https://riziles.github.io/ferray-wasm-poc/kan",
+    "og:type": "website",
+    "twitter:card": "summary_large_image",
+    "twitter:title": "🧠 Kolmogorov–Arnold Network — Live KAN Training | Ferray × WASM",
+    "twitter:description": "Watch a KAN learn 2D functions in your browser — B-spline edge functions trained live in WASM.",
+    "twitter:image": "https://riziles.github.io/ferray-wasm-poc/og-kan.png"
   }
 }
