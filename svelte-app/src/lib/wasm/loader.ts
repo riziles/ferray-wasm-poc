@@ -17,6 +17,11 @@ export interface WasmApi {
   planet_positions: WasmModule['planet_positions'];
   barbault_index: WasmModule['barbault_index'];
   planet_info: WasmModule['planet_info'];
+  kan_reset: WasmModule['kan_reset'];
+  kan_train: WasmModule['kan_train'];
+  kan_eval_grid: WasmModule['kan_eval_grid'];
+  kan_edge_spline: WasmModule['kan_edge_spline'];
+  kan_stats: WasmModule['kan_stats'];
   linspace: WasmModule['linspace'];
   radial_2d: WasmModule['radial_2d'];
   sine_wave: WasmModule['sine_wave'];
@@ -48,6 +53,11 @@ function createApi(mod: WasmModule): WasmApi {
     planet_positions: mod.planet_positions,
     barbault_index: mod.barbault_index,
     planet_info: mod.planet_info,
+    kan_reset: mod.kan_reset,
+    kan_train: mod.kan_train,
+    kan_eval_grid: mod.kan_eval_grid,
+    kan_edge_spline: mod.kan_edge_spline,
+    kan_stats: mod.kan_stats,
     linspace: mod.linspace,
     radial_2d: mod.radial_2d,
     sine_wave: mod.sine_wave,

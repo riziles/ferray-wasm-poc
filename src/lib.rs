@@ -1,3 +1,5 @@
+mod kan;
+
 use ferray_core::prelude::*;
 use num_complex::Complex;
 use wasm_bindgen::prelude::*;
@@ -1010,4 +1012,51 @@ pub fn planet_info() -> Result<JsValue, JsValue> {
     let symbols: Vec<String> = PLANETS.iter().map(|(_, _, sym)| sym.to_string()).collect();
     let result = serde_json::json!({"names": names, "symbols": symbols});
     Ok(JsValue::from_str(&result.to_string()))
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Kolmogorov–Arnold Network — learnable B-spline edge functions
+// (implementation in src/kan.rs; pure scalar Rust, no ferray crates)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// (Re)create the KAN: [2 → hidden → 1], B-spline edge functions.
+/// `grid` = number of spline intervals, `order` = spline order (degree+1),
+/// `target` = index of the 2D function to learn (0–5),
+/// `samples_per_axis` = training grid density on [−3,3]².
+#[wasm_bindgen]
+pub fn kan_reset(
+    hidden: usize,
+    grid: usize,
+    order: usize,
+    target: usize,
+    samples_per_axis: usize,
+    seed: u32,
+) -> Result<(), JsValue> {
+    kan::reset(hidden, grid, order, target, samples_per_axis, seed)
+}
+
+/// Run `epochs` full-batch Adam epochs; returns normalized RMSE per epoch.
+#[wasm_bindgen]
+pub fn kan_train(epochs: usize, lr: f64) -> Result<Vec<f64>, JsValue> {
+    kan::train(epochs, lr)
+}
+
+/// Evaluate truth + learned function on a size×size grid.
+/// Returns interleaved [truth, learned] pairs, row-major.
+#[wasm_bindgen]
+pub fn kan_eval_grid(size: usize) -> Result<Vec<f64>, JsValue> {
+    kan::eval_grid(size)
+}
+
+/// Evaluate one edge's learned φ(x) over x ∈ [−4,4] as [x, y] pairs.
+/// `layer` 0 = input→hidden edges, 1 = hidden→output edges.
+#[wasm_bindgen]
+pub fn kan_edge_spline(layer: usize, from: usize, to: usize, points: usize) -> Result<Vec<f64>, JsValue> {
+    kan::edge_spline(layer, from, to, points)
+}
+
+/// Current trainer stats as a JSON string (epoch, sizes, param count, …).
+#[wasm_bindgen]
+pub fn kan_stats() -> Result<String, JsValue> {
+    kan::stats()
 }
