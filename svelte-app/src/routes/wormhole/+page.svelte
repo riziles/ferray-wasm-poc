@@ -71,26 +71,37 @@ recs.sort_by(|a, b| b.depth.cmp(a.depth));            // far → near`;
     <pre class="code-block p-4 overflow-x-auto text-xs"><code>{ellis}
 {flamm}</code></pre>
 
-    <h3 class="h3 mt-4">The construction slider — gluing collar neighborhoods</h3>
+    <h3 class="h3 mt-4">Three ways to draw the same construction</h3>
     <p class="text-surface-300">
       Topologically this is a <strong>connected sum</strong>: take two copies of the plane, cut a
       disk out of each, and <em>identify</em> (glue) the two boundary circles. To make the join
       smooth you don't glue just the circles — you glue their <strong>collar neighborhoods</strong>:
       the thin annular "cuffs" just inside each boundary circle. The two cuffs become one region:
-      the throat (<code class="code-block">S¹ × ℝ</code>). Drag the <strong>construction</strong>
-      slider to 0% to cut the sheets apart (glowing rims = the boundary circles; toggle
-      <strong>collars</strong> to tint the cuffs themselves, yellow above and violet below), then
-      back to 100% to glue the collars into one continuous manifold.
+      the throat (<code class="code-block">S¹ × ℝ</code>). The demo shows the construction three
+      ways, side by side — one shared camera, the same traveler:
     </p>
-    <p class="text-surface-300">
-      Note the two-sheet picture and the finished tube describe <em>the same space</em> — the
-      two-sheet version just uses <strong>two charts</strong> (one per sheet, overlapping on the
-      collar band), while the welded version uses one. The <strong>two charts</strong> toggle
-      recolors the surface accordingly: chart U₁ covers the upper half, chart U₂ the lower half,
-      and the checkerboard strip around the throat is exactly the overlap — the glued collar band.
-      The <strong>glued seam</strong> toggle dashes the identified circle itself, so the
-      construction stays visible in the finished manifold.
-    </p>
+    <ul class="list-disc list-inside text-surface-300 space-y-1">
+      <li>
+        <strong>① Two sheets (two charts, before gluing)</strong> — two flat planes with disks
+        removed; the glowing rims are the boundary circles. Far from the hole the traveler is on
+        exactly one sheet — the two charts only "know" each other at the collars.
+      </li>
+      <li>
+        <strong>② Gluing the collars (identification)</strong> — the collars are prepared with the
+        same two hues, <em>yellow and indigo</em>, radially inverted between the sheets:
+        yellow-out/indigo-in on top, indigo-out/yellow-in on the bottom — the "order of the
+        colors" flips. Glue them and the pair becomes the throat's yellow → indigo gradient (③).
+        The dashed connector fades in only inside the overlap — outside the collars the two sheets
+        are separate universes, each point in exactly one chart. The bottom sheet is read in its own
+        mirrored chart (θ ↦ −θ), and that chart's drawing frame is mirrored too, so the identified
+        point lines up with the embedding's physical position.
+      </li>
+      <li>
+        <strong>③ One chart (the embedding)</strong> — the smooth 3D throat is the same space,
+        drawn by bending the sheets into a third dimension. That's a drawing luxury, not what
+        anyone on a sheet experiences; drag the <strong>weld</strong> slider to animate the gluing.
+      </li>
+    </ul>
 
     <h3 class="h3 mt-4">What it is <em>not</em></h3>
     <p class="text-surface-300">

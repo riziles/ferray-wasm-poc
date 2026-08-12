@@ -1078,6 +1078,8 @@ pub fn kan_stats() -> Result<String, JsValue> {
 /// * `show_collars`: 1 = tint the collar neighborhoods (the cuffs that get glued)
 /// * `charts_mode`: 0 = one chart, 1 = two charts (overlap strip on the throat)
 /// * `show_seam`: 1 = dashed ring marking the glued boundary circle (weld = 1)
+/// * `view`: 0/1 = two-chart plane illustrations (panel 1 / panel 2 with the
+///   identification color map), 2 = the 3D embedding
 ///
 /// Returns a tagged, depth-sorted draw list (quads/lines/dots) for canvas 2D.
 #[wasm_bindgen]
@@ -1098,6 +1100,7 @@ pub fn wh_render(
     show_collars: u32,
     charts_mode: u32,
     show_seam: u32,
+    view: u32,
 ) -> Vec<f64> {
     wormhole::render(
         width,
@@ -1118,5 +1121,6 @@ pub fn wh_render(
         },
         color_mode,
         traveler_t,
+        view,
     )
 }

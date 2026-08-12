@@ -18,7 +18,7 @@
   let quality = $state(1);      // 0 low, 1 med, 2 high
   let zoom = $state(1.0);
 
-  // ── construction didactics ──
+  // ── construction didactics (apply to the 3D embedding panel) ──
   let showCollars = $state(false); // tint the collar neighborhoods (cuffs)
   let chartsMode = $state(0);      // 0 one chart, 1 two charts w/ overlap
   let showSeam = $state(true);     // dashed ring on the glued boundary circle
@@ -33,18 +33,20 @@
   let ms = $state(0);
   let nQuads = $state(0);
 
-  let canvas: HTMLCanvasElement;
+  let c0: HTMLCanvasElement; // panel 1: two sheets, cut apart
+  let c1: HTMLCanvasElement; // panel 2: gluing the collars (identification)
+  let c2: HTMLCanvasElement; // panel 3: one chart, the embedding
   let rafId = 0;
   let dragging = false;
   let lx = 0, ly = 0;
 
   const QUAL: [number, number][] = [[16, 56], [26, 80], [38, 104]];
-  const CW = 960, CH = 620;
+  const VPW = 430, VPH = 400;
 
-  function draw(list: Float64Array) {
+  function draw(list: Float64Array, canvas: HTMLCanvasElement): number {
     const ctx = canvas.getContext('2d')!;
     ctx.fillStyle = '#0b1020';
-    ctx.fillRect(0, 0, CW, CH);
+    ctx.fillRect(0, 0, VPW, VPH);
 
     let i = 0, q = 0;
     while (i < list.length) {
@@ -91,7 +93,7 @@
         i += 8;
       }
     }
-    nQuads = q;
+    return q;
   }
 
   let last = 0;
@@ -103,30 +105,29 @@
       fpsEma = fpsEma * 0.92 + (1 / Math.max(dt, 1e-4)) * 0.08;
       fps = Math.round(fpsEma);
       if (autoRotate && !dragging) yaw += dt * 0.45;
-      if (traveler) tSec += dt;
+      // a slow traveler: ½ speed so the descent reads clearly
+      if (traveler) tSec += dt * 0.5;
     }
     last = now;
 
     const [rings, segs] = QUAL[quality];
+    const t = traveler ? tSec : -1;
+    const common = [profile, throat, stretch, weld, colorMode, rings, segs, t,
+      showCollars ? 1 : 0, chartsMode, showSeam ? 1 : 0] as const;
     const t0 = performance.now();
-    const list = wasm.wh_render(
-      CW, CH, yaw, pitch, zoom,
-      profile, throat, stretch, weld,
-      colorMode, rings, segs,
-      traveler ? tSec : -1,
-      showCollars ? 1 : 0,
-      chartsMode,
-      showSeam ? 1 : 0,
-    );
+    const a = wasm.wh_render(VPW, VPH, yaw, pitch, zoom, ...common, 0); // two sheets, cut apart
+    const b = wasm.wh_render(VPW, VPH, yaw, pitch, zoom, ...common, 1); // gluing the collars
+    const c = wasm.wh_render(VPW, VPH, yaw, pitch, zoom, ...common, 2); // one chart, embedding
     ms = performance.now() - t0;
-    draw(list);
+
+    nQuads = (c0 ? draw(a, c0) : 0) + (c1 ? draw(b, c1) : 0) + (c2 ? draw(c, c2) : 0);
   }
 
-  // ── pointer interaction: drag to orbit, wheel to zoom ──
+  // ── pointer interaction: drag to orbit (shared camera), wheel to zoom ──
   function onPointerDown(e: PointerEvent) {
     dragging = true;
     lx = e.clientX; ly = e.clientY;
-    canvas.setPointerCapture(e.pointerId);
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   }
   function onPointerMove(e: PointerEvent) {
     if (!dragging) return;
@@ -213,26 +214,70 @@
 
   <div class="space-y-2">
     <p class="text-sm text-surface-300 font-medium">
-      Drag to orbit · scroll to zoom. The <strong>weld</strong> slider replays the connected-sum
-      construction: cut a disk out of each sheet, then <strong>glue the collar neighborhoods</strong>
-      of the two boundary circles — the glued cuffs become the throat. <strong>Collars</strong> tints
-      those cuffs (yellow above, violet below); <strong>glued seam</strong> dashes the identified
-      circle; <strong>two charts</strong> recolors the same welded surface as overlapping coordinate
-      patches — the checkerboard strip around the throat is where the two charts overlap. The
-      <strong>traveler</strong> rides the surface straight through the throat.
+      Three ways to draw the same construction. Drag to orbit (one shared camera) · scroll to zoom.
+      The <strong>traveler</strong> is the same journey in all three — half speed so you can watch it.
+      The <strong>weld</strong> slider animates the ③ embedding; the ①② sheets always show the two
+      charts of the picture.
     </p>
-    <canvas
-      bind:this={canvas}
-      width={CW}
-      height={CH}
-      class="rounded border border-surface-700 bg-surface-950/40 w-full cursor-grab active:cursor-grabbing"
+
+    <div
+      class="grid grid-cols-1 md:grid-cols-3 gap-3 cursor-grab active:cursor-grabbing"
+      role="group"
+      aria-label="Wormhole construction panels: drag to orbit, scroll to zoom"
       style="touch-action:none;"
       onpointerdown={onPointerDown}
       onpointermove={onPointerMove}
       onpointerup={onPointerUp}
       onpointercancel={onPointerUp}
       onwheel={onWheel}
-    ></canvas>
+    >
+      <div class="space-y-1">
+        <p class="text-xs font-semibold uppercase tracking-wide text-surface-400">① two sheets · before gluing</p>
+        <canvas
+          bind:this={c0}
+          width={VPW}
+          height={VPH}
+          class="rounded border border-surface-700 bg-surface-950/40 w-full"
+        ></canvas>
+        <p class="text-xs text-surface-400">
+          Cut a disk out of each plane — two sheets with boundary circles (drawn outlines). The
+          traveler rides one sheet at a time; far from the hole it's only on one chart.
+        </p>
+      </div>
+
+      <div class="space-y-1">
+        <p class="text-xs font-semibold uppercase tracking-wide text-surface-400">② gluing the collars · identification</p>
+        <canvas
+          bind:this={c1}
+          width={VPW}
+          height={VPH}
+          class="rounded border border-surface-700 bg-surface-950/40 w-full"
+        ></canvas>
+        <p class="text-xs text-surface-400">
+          The collars get prepared with the same two hues — yellow &amp; indigo — radially
+          inverted between the sheets: yellow-out/indigo-in on top, indigo-out/yellow-in on the
+          bottom. Glue them and the gradient flows yellow → indigo down the throat (③). The dashed
+          connector (and second traveler dot) fade in only inside the overlap — outside the collars
+          the two sheets are separate universes, so the traveler has no second copy. The bottom
+          sheet is read in its own mirrored chart (θ ↦ −θ), and that chart's drawing frame is
+          mirrored too — so the identified point lines up with panel ③'s physical position.
+        </p>
+      </div>
+
+      <div class="space-y-1">
+        <p class="text-xs font-semibold uppercase tracking-wide text-surface-400">③ one chart · the embedding</p>
+        <canvas
+          bind:this={c2}
+          width={VPW}
+          height={VPH}
+          class="rounded border border-surface-700 bg-surface-950/40 w-full"
+        ></canvas>
+        <p class="text-xs text-surface-400">
+          The smooth throat — a luxury of projecting into a 3rd dimension the traveler can't
+          perceive. Same space as ①②, drawn as a single chart. Weld slider animates the gluing.
+        </p>
+      </div>
+    </div>
   </div>
 
 </div>
