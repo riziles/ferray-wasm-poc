@@ -583,7 +583,7 @@ fn render_planes(
         let (top_ang, bot_ang, top_pres, bot_pres) = if zb >= 0.0 {
             (th, -th + wob, 1.0, p)
         } else {
-            (-th, th + wob, p, 1.0)
+            (th + wob, -th, p, 1.0)
         };
         let dots: [([f64; 3], f64, f64); 2] = [
             // top sheet dot (hue in the top chart's convention)
@@ -854,5 +854,41 @@ mod tests {
             i += match dl[i] as u32 { 0 => 13, 1 => 10, _ => 8 };
         }
         assert_eq!(i, dl.len(), "plane draw list must parse exactly");
+    }
+
+    #[test]
+    fn traveler_positions_continuous_across_throat_crossing() {
+        // Sample the projected traveler-dot positions a hair before and after
+        // the throat crossing (zb = 0). Each dot may move only a little over
+        // dt = 0.04 — a teleport (dots swapping sheets) would move one of them
+        // a huge distance in a single step.
+        let t_cross = std::f64::consts::PI / 1.6;
+        let dots_at = |t: f64| -> Vec<(f64, f64)> {
+            let dl = render(480, 360, 0.7, 0.5, 1.0, &cfg(1.0), 0, t, 1);
+            let mut pts = Vec::new();
+            let mut i = 0usize;
+            while i < dl.len() {
+                if dl[i] == 2.0 {
+                    pts.push((dl[i + 2], dl[i + 3]));
+                }
+                i += match dl[i] as u32 { 0 => 13, 1 => 10, _ => 8 };
+            }
+            // each dot emits a glow + core record at the same center: dedupe
+            let mut uniq: Vec<(i32, i32)> = pts.iter().map(|p| (p.0.round() as i32, p.1.round() as i32)).collect();
+            uniq.sort();
+            uniq.dedup();
+            uniq.into_iter().map(|(x, y)| (x as f64, y as f64)).collect()
+        };
+        let before = dots_at(t_cross - 0.02);
+        let after = dots_at(t_cross + 0.02);
+        assert_eq!(before.len(), 2, "both charts see the traveler just before the crossing");
+        assert_eq!(after.len(), 2, "both charts see the traveler just after the crossing");
+        for d0 in &before {
+            let nearest = after
+                .iter()
+                .map(|d1| ((d1.0 - d0.0).powi(2) + (d1.1 - d0.1).powi(2)).sqrt())
+                .fold(f64::INFINITY, f64::min);
+            assert!(nearest < 12.0, "dot moved only a little over dt=0.04 (was {nearest:.1}px): no teleport");
+        }
     }
 }
