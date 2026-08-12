@@ -220,26 +220,11 @@ const CHART_BOT: [f64; 3] = [0.95, 0.55, 0.65];
 const COLLAR_TOP: [f64; 3] = [1.0, 0.88, 0.30];
 const COLLAR_BOT: [f64; 3] = [0.75, 0.62, 1.0];
 
-/// Neutral body color of the sheets in panel 2 (kept light enough to read
-/// as solid planes against the dark background).
-const PLANE_BODY: [f64; 3] = [0.24, 0.28, 0.42];
-
-/// Rainbow hue at h ∈ [0, 1) — the identification color mapping: each hue
-/// around the boundary circle of one sheet is declared "the same point" as
-/// the matching hue on the other sheet.
-fn hue_rgb(h: f64) -> [f64; 3] {
-    let h = h - h.floor();
-    let x = 1.0 - ((h * 6.0) % 2.0 - 1.0).abs();
-    let (r, g, b) = match (h * 6.0) as u32 {
-        0 => (1.0, x, 0.0),
-        1 => (x, 1.0, 0.0),
-        2 => (0.0, 1.0, x),
-        3 => (0.0, x, 1.0),
-        4 => (x, 0.0, 1.0),
-        _ => (1.0, 0.0, x),
-    };
-    [r, g, b]
-}
+/// The two-hue collar scheme from the source figure (column 2): the same
+/// yellow ↔ indigo pair on both rims, radially INVERTED between the sheets
+/// (yellow-out/indigo-in on top, indigo-out/yellow-in on the bottom).
+const COLLAR_YELLOW: [f64; 3] = [1.0, 0.87, 0.35];
+const COLLAR_INDIGO: [f64; 3] = [0.51, 0.55, 0.96];
 
 // ── render ────────────────────────────────────────────────────────────────
 
@@ -256,7 +241,8 @@ fn hue_rgb(h: f64) -> [f64; 3] {
 ///
 /// `view` selects which illustration to draw:
 /// * 0 — panel 1: the two flat sheets, cut apart (two charts, before gluing)
-/// * 1 — panel 2: the same sheets with the collar identification color map
+/// * 1 — panel 2: the same sheets with the collars prepared for gluing
+///   (the yellow ↔ indigo pair, radially inverted between the sheets)
 /// * 2 — panel 3: the smooth 3D embedding (one chart)
 pub fn render(
     w: u32,
@@ -484,18 +470,18 @@ fn render_planes(
         for i in 0..n {
             for j in 0..m {
                 let j2 = (j + 1) % m;
-                let th_mid = TAU * (j as f64 + 0.5) / m as f64;
                 let r_mid = 0.5 * (rs[i] + rs[i + 1]);
                 let mut col = if half == 0 { [0.55, 0.93, 0.65] } else { [0.98, 0.64, 0.64] };
-                if view == 1 {
-                    if r_mid < collar_radius(q) {
-                        // the collar: identification gradient, fading outward from the rim
-                        let t = collar_fade(r_mid, q);
-                        let h = if half == 0 { th_mid / TAU } else { 1.0 - th_mid / TAU };
-                        col = mix(PLANE_BODY, hue_rgb(h), 0.35 + 0.65 * t);
+                if view == 1 && r_mid < collar_radius(q) {
+                    // the collar: the same yellow ↔ indigo pair on both rims,
+                    // radially INVERTED between the sheets (as in the source
+                    // figure): t = 1 at the glue edge, 0 at the outer edge
+                    let t = collar_fade(r_mid, q);
+                    col = if half == 0 {
+                        mix(COLLAR_YELLOW, COLLAR_INDIGO, t)
                     } else {
-                        col = PLANE_BODY; // neutral body
-                    }
+                        mix(COLLAR_INDIGO, COLLAR_YELLOW, t)
+                    };
                 }
                 let nrm = [0.0, 0.0, sgn as f64];
                 let shade = 0.55 + 0.45 * dot3(nrm, l).abs();
@@ -518,16 +504,16 @@ fn render_planes(
             }
         }
 
-        // the boundary circle (the rim that gets glued)
+        // the boundary circle (the rim that gets glued): a plain outline in
+        // panel 1; in panel 2 it carries the collar's glue-edge color
         for j in 0..m {
             let j2 = (j + 1) % m;
-            let th_mid = TAU * (j as f64 + 0.5) / m as f64;
             let col = if view == 0 {
-                [1.0, 0.86, 0.35]
+                [0.25, 0.29, 0.38] // neutral outline, as in the source figure
             } else if half == 0 {
-                hue_rgb(th_mid / TAU)
+                COLLAR_INDIGO // the top collar's glue edge
             } else {
-                hue_rgb(1.0 - th_mid / TAU)
+                COLLAR_YELLOW // the bottom collar's glue edge
             };
             let va = view3(&rings[0][j]);
             let vb = view3(&rings[0][j2]);
@@ -585,21 +571,21 @@ fn render_planes(
         } else {
             (th + wob, -th, p, 1.0)
         };
-        let dots: [([f64; 3], f64, f64); 2] = [
-            // top sheet dot (hue in the top chart's convention)
-            ([r * top_ang.cos(), r * top_ang.sin(), gap], top_ang / TAU, top_pres),
-            // bottom sheet dot (hue in the bottom chart's convention, so
-            // matching colors really mean the identified point)
-            ([r2 * bot_ang.cos(), r2 * bot_ang.sin(), -gap], 1.0 - bot_ang / TAU, bot_pres),
+        let dots: [([f64; 3], f64); 2] = [
+            // top sheet dot
+            ([r * top_ang.cos(), r * top_ang.sin(), gap], top_pres),
+            // bottom sheet dot (the identified point, in the bottom chart's
+            // mirrored coordinates)
+            ([r2 * bot_ang.cos(), r2 * bot_ang.sin(), -gap], bot_pres),
         ];
 
-        for (pnt, h, pres) in &dots {
+        for (pnt, pres) in &dots {
             let v = view3(pnt);
             let (x, y, d) = proj(&v);
             let kpersp = f / (f + d);
             let rad = 0.045 * kpersp * s * pres;
             if rad > 0.05 {
-                let col = if view == 1 { hue_rgb(*h) } else { [1.0, 0.72, 0.20] };
+                let col = [1.0, 0.72, 0.20];
                 recs.push((d - 0.002, vec![2.0, d - 0.002, x, y, rad, col[0] * 255.0, col[1] * 255.0, col[2] * 255.0]));
                 recs.push((d - 0.003, vec![2.0, d - 0.003, x, y, rad * 0.45, 255.0, 250.0, 230.0]));
             }
@@ -801,17 +787,19 @@ mod tests {
     }
 
     #[test]
-    fn hue_mapping_is_periodic() {
-        assert_eq!(hue_rgb(0.0), [1.0, 0.0, 0.0], "red at h=0");
-        assert_eq!(hue_rgb(1.0), [1.0, 0.0, 0.0], "hue wraps");
-        assert_eq!(hue_rgb(1.0 / 6.0), [1.0, 1.0, 0.0], "yellow at h=1/6");
-        assert_eq!(hue_rgb(0.5), [0.0, 1.0, 1.0], "cyan at h=1/2");
-        // the identification θ ↦ −θ sends the top rim's color at θ to the
-        // bottom rim's color at 1 − θ: the ORDER of the colors is reversed,
-        // which is the point of the mapping (orientation-reversing glue)
-        assert_eq!(hue_rgb(0.25), [0.5, 1.0, 0.0]);
-        assert_eq!(hue_rgb(0.75), [0.5, 0.0, 1.0]);
-        assert_ne!(hue_rgb(0.25), hue_rgb(0.75), "opposite angles get reversed colors");
+    fn collar_gradient_inverts_between_sheets() {
+        // the source figure colors the collars with the same two hues,
+        // radially inverted: t = 1 at the glue edge, 0 at the outer edge
+        let top = |t: f64| mix(COLLAR_YELLOW, COLLAR_INDIGO, t);
+        let bot = |t: f64| mix(COLLAR_INDIGO, COLLAR_YELLOW, t);
+        // top: yellow at the outer edge, indigo at the glue edge
+        assert_eq!(top(0.0), COLLAR_YELLOW);
+        assert_eq!(top(1.0), COLLAR_INDIGO);
+        // bottom: inverted
+        assert_eq!(bot(0.0), COLLAR_INDIGO);
+        assert_eq!(bot(1.0), COLLAR_YELLOW);
+        // they meet in the middle
+        assert_eq!(top(0.5), bot(0.5));
     }
 
     #[test]

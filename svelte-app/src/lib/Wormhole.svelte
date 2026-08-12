@@ -240,7 +240,7 @@
           class="rounded border border-surface-700 bg-surface-950/40 w-full"
         ></canvas>
         <p class="text-xs text-surface-400">
-          Cut a disk out of each plane — two sheets with boundary circles (the glowing rims). The
+          Cut a disk out of each plane — two sheets with boundary circles (drawn outlines). The
           traveler rides one sheet at a time; far from the hole it's only on one chart.
         </p>
       </div>
@@ -254,11 +254,13 @@
           class="rounded border border-surface-700 bg-surface-950/40 w-full"
         ></canvas>
         <p class="text-xs text-surface-400">
-          Matching colors = the same point: the collars get glued, colors running in opposite order
-          (orientation-reversing). The colored band is the overlap both charts cover — the dashed
-          connector (and the second traveler dot) fade in only there: outside the collars the two
-          sheets are separate universes, so the traveler has no second copy. Note the bottom sheet is
-          read in its own mirrored chart (θ ↦ −θ) — that's why the traveler sits antipodal to panel ③'s.
+          The collars get prepared with the same two hues — yellow &amp; indigo — radially
+          inverted between the sheets: yellow-out/indigo-in on top, indigo-out/yellow-in on the
+          bottom. Glue them and the gradient flows yellow → indigo down the throat (③). The dashed
+          connector (and second traveler dot) fade in only inside the overlap — outside the collars
+          the two sheets are separate universes, so the traveler has no second copy. The bottom
+          sheet is read in its own mirrored chart (θ ↦ −θ) — that's why the traveler sits antipodal
+          to panel ③'s.
         </p>
       </div>
 
