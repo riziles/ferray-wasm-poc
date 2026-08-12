@@ -146,7 +146,7 @@ fn build_mesh(c: &ShapeCfg) -> (Vec<Quad>, Vec<Seg>) {
                 (0..m)
                     .map(|j| {
                         let th = TAU * j as f64 / m as f64;
-                        sheet_point(r, th, z, half == 1)
+                        [r * th.cos(), r * th.sin(), z]
                     })
                     .collect()
             })
