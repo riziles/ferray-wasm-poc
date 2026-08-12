@@ -1,4 +1,5 @@
 mod kan;
+mod wormhole;
 
 use ferray_core::prelude::*;
 use num_complex::Complex;
@@ -1059,4 +1060,54 @@ pub fn kan_edge_spline(layer: usize, from: usize, to: usize, points: usize) -> R
 #[wasm_bindgen]
 pub fn kan_stats() -> Result<String, JsValue> {
     kan::stats()
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Wormhole embedding diagram — software-3D rendered in Rust
+// (implementation in src/wormhole.rs; pure scalar Rust, no ferray crates)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Render one frame of the 3D wormhole embedding diagram.
+///
+/// * `profile`: 0 = Ellis catenoid (traversable), 1 = Flamm paraboloid (Schwarzschild)
+/// * `throat_ratio`: throat radius / sheet radius (0.05–0.6)
+/// * `tube_stretch`: vertical stretch of the throat
+/// * `weld`: 0 = two separate holed sheets … 1 = welded throat
+/// * `color_mode`: 0 = classic (green/red sheets), 1 = spectrum
+/// * `traveler_t`: animation time of the throat-crossing particle; < 0 = off
+///
+/// Returns a tagged, depth-sorted draw list (quads/lines/dots) for canvas 2D.
+#[wasm_bindgen]
+pub fn wh_render(
+    width: u32,
+    height: u32,
+    yaw: f64,
+    pitch: f64,
+    zoom: f64,
+    profile: u32,
+    throat_ratio: f64,
+    tube_stretch: f64,
+    weld: f64,
+    color_mode: u32,
+    rings_half: u32,
+    segs: u32,
+    traveler_t: f64,
+) -> Vec<f64> {
+    wormhole::render(
+        width,
+        height,
+        yaw,
+        pitch,
+        zoom,
+        &wormhole::ShapeCfg {
+            profile,
+            q: throat_ratio.clamp(0.05, 0.6),
+            stretch: tube_stretch.clamp(0.3, 3.0),
+            weld: weld.clamp(0.0, 1.0),
+            rings_half,
+            segs,
+        },
+        color_mode,
+        traveler_t,
+    )
 }
