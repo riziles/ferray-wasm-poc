@@ -31,5 +31,16 @@
     "twitter:title": "🧠 Kolmogorov–Arnold Network — Live KAN Training | Ferray × WASM",
     "twitter:description": "Watch a KAN learn 2D functions in your browser — B-spline edge functions trained live in WASM.",
     "twitter:image": "https://riziles.github.io/ferray-wasm-poc/og-kan.png"
+  },
+  "wormhole": {
+    "og:title": "🌀 Wormhole Embedding Diagram — Interactive 3D | Ferray × WASM",
+    "og:description": "The classic 'two sheets joined by a throat' picture as a real 3D model: Ellis & Flamm embedding surfaces, weld morph, and a traveler through the throat — rendered in Rust WASM.",
+    "og:image": "https://riziles.github.io/ferray-wasm-poc/og-wormhole.png",
+    "og:url": "https://riziles.github.io/ferray-wasm-poc/wormhole",
+    "og:type": "website",
+    "twitter:card": "summary_large_image",
+    "twitter:title": "🌀 Wormhole Embedding Diagram — Interactive 3D | Ferray × WASM",
+    "twitter:description": "Ellis & Flamm embedding surfaces as an interactive 3D model — weld the sheets, ride the traveler. Rendered in Rust WASM.",
+    "twitter:image": "https://riziles.github.io/ferray-wasm-poc/og-wormhole.png"
   }
 }
