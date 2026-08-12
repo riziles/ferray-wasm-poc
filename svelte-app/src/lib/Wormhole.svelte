@@ -257,7 +257,8 @@
           Matching colors = the same point: the collars get glued, colors running in opposite order
           (orientation-reversing). The colored band is the overlap both charts cover — the dashed
           connector (and the second traveler dot) fade in only there: outside the collars the two
-          sheets are separate universes, so the traveler has no second copy.
+          sheets are separate universes, so the traveler has no second copy. Note the bottom sheet is
+          read in its own mirrored chart (θ ↦ −θ) — that's why the traveler sits antipodal to panel ③'s.
         </p>
       </div>
 
