@@ -18,6 +18,11 @@
   let quality = $state(1);      // 0 low, 1 med, 2 high
   let zoom = $state(1.0);
 
+  // ── construction didactics ──
+  let showCollars = $state(false); // tint the collar neighborhoods (cuffs)
+  let chartsMode = $state(0);      // 0 one chart, 1 two charts w/ overlap
+  let showSeam = $state(true);     // dashed ring on the glued boundary circle
+
   // ── runtime (not reactive — read per-frame) ──
   let yaw = 0.65;
   let pitch = 0.42;
@@ -109,6 +114,9 @@
       profile, throat, stretch, weld,
       colorMode, rings, segs,
       traveler ? tSec : -1,
+      showCollars ? 1 : 0,
+      chartsMode,
+      showSeam ? 1 : 0,
     );
     ms = performance.now() - t0;
     draw(list);
@@ -188,6 +196,15 @@
     <button class="btn preset-tonal-surface" onclick={() => { autoRotate = !autoRotate; }}>
       {autoRotate ? '🔄 auto-rotate on' : '🔄 auto-rotate off'}
     </button>
+    <button class="btn preset-tonal-surface" onclick={() => { showCollars = !showCollars; }}>
+      {showCollars ? '🟡 collars on' : '🟡 collars off'}
+    </button>
+    <button class="btn preset-tonal-surface" onclick={() => { chartsMode = chartsMode === 0 ? 1 : 0; }}>
+      {chartsMode === 0 ? '🗺 one chart' : '🗺 two charts'}
+    </button>
+    <button class="btn preset-tonal-surface" onclick={() => { showSeam = !showSeam; }}>
+      {showSeam ? '🧵 glued seam on' : '🧵 glued seam off'}
+    </button>
     <button class="btn preset-tonal-surface" onclick={() => { yaw = 0.65; pitch = 0.42; zoom = 1.0; }}>↺ reset view</button>
     <span class="badge preset-tonal-primary">{fps} fps</span>
     <span class="badge preset-tonal-warning">{ms.toFixed(1)} ms/frame (WASM)</span>
@@ -196,9 +213,13 @@
 
   <div class="space-y-2">
     <p class="text-sm text-surface-300 font-medium">
-      Drag to orbit · scroll to zoom. The <strong>weld</strong> slider replays the textbook
-      construction: two flat sheets with holes cut out → rims identified → one continuous
-      manifold. The <strong>traveler</strong> rides the surface straight through the throat.
+      Drag to orbit · scroll to zoom. The <strong>weld</strong> slider replays the connected-sum
+      construction: cut a disk out of each sheet, then <strong>glue the collar neighborhoods</strong>
+      of the two boundary circles — the glued cuffs become the throat. <strong>Collars</strong> tints
+      those cuffs (yellow above, violet below); <strong>glued seam</strong> dashes the identified
+      circle; <strong>two charts</strong> recolors the same welded surface as overlapping coordinate
+      patches — the checkerboard strip around the throat is where the two charts overlap. The
+      <strong>traveler</strong> rides the surface straight through the throat.
     </p>
     <canvas
       bind:this={canvas}

@@ -1075,6 +1075,9 @@ pub fn kan_stats() -> Result<String, JsValue> {
 /// * `weld`: 0 = two separate holed sheets … 1 = welded throat
 /// * `color_mode`: 0 = classic (green/red sheets), 1 = spectrum
 /// * `traveler_t`: animation time of the throat-crossing particle; < 0 = off
+/// * `show_collars`: 1 = tint the collar neighborhoods (the cuffs that get glued)
+/// * `charts_mode`: 0 = one chart, 1 = two charts (overlap strip on the throat)
+/// * `show_seam`: 1 = dashed ring marking the glued boundary circle (weld = 1)
 ///
 /// Returns a tagged, depth-sorted draw list (quads/lines/dots) for canvas 2D.
 #[wasm_bindgen]
@@ -1092,6 +1095,9 @@ pub fn wh_render(
     rings_half: u32,
     segs: u32,
     traveler_t: f64,
+    show_collars: u32,
+    charts_mode: u32,
+    show_seam: u32,
 ) -> Vec<f64> {
     wormhole::render(
         width,
@@ -1106,6 +1112,9 @@ pub fn wh_render(
             weld: weld.clamp(0.0, 1.0),
             rings_half,
             segs,
+            show_collars: show_collars != 0,
+            charts_mode: charts_mode.clamp(0, 1),
+            show_seam: show_seam != 0,
         },
         color_mode,
         traveler_t,

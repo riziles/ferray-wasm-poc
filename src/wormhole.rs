@@ -51,6 +51,8 @@ struct Quad {
     p: [[f64; 3]; 4],
     /// normalized world height (−1..1) used for the color scheme
     u: f64,
+    /// radius of the quad's inner ring (distance from the axis)
+    r_in: f64,
 }
 
 #[derive(Clone, Copy)]
@@ -69,6 +71,9 @@ pub struct ShapeCfg {
     pub weld: f64,    // 0 = two separate holed sheets … 1 = welded throat
     pub rings_half: u32,
     pub segs: u32,
+    pub show_collars: bool, // tint the collar neighborhoods of the holes
+    pub charts_mode: u32,   // 0 = one chart, 1 = two charts with overlap
+    pub show_seam: bool,    // dashed ring on the glued boundary circle
 }
 
 fn weld_geometry(c: &ShapeCfg) -> (f64, f64) {
@@ -121,6 +126,7 @@ fn build_mesh(c: &ShapeCfg) -> (Vec<Quad>, Vec<Seg>) {
                 quads.push(Quad {
                     p: [rings[i][j], rings[i][j2], rings[i + 1][j2], rings[i + 1][j]],
                     u: (zm / extent).clamp(-1.0, 1.0),
+                    r_in: rs[i],
                 });
             }
         }
@@ -184,6 +190,36 @@ fn spectrum(u: f64) -> [f64; 3] {
     ]
 }
 
+// ── collar neighborhoods & chart colors ───────────────────────────────────
+// The connected-sum construction glues the two *collars*: the innermost
+// annulus [r_cut, r_cut + COLLAR_FRAC·(1 − r_cut)] just inside each boundary
+// circle. The didactic toggles below let you see those cuffs, the identified
+// circle itself (the seam), and the same finished space as two charts whose
+// patches overlap exactly on the glued collar band.
+
+const COLLAR_FRAC: f64 = 0.10;
+
+fn collar_radius(r_cut: f64) -> f64 {
+    r_cut + COLLAR_FRAC * (1.0 - r_cut)
+}
+
+/// 1 at the boundary circle, fading to 0 at the collar's outer edge.
+fn collar_fade(r: f64, r_cut: f64) -> f64 {
+    ((collar_radius(r_cut) - r) / (COLLAR_FRAC * (1.0 - r_cut)).max(1e-9)).clamp(0.0, 1.0)
+}
+
+/// Chart U₁ / U₂ tints for the "two charts" view: the welded surface is one
+/// space; U₁ covers the upper half, U₂ the lower half, and the two charts
+/// overlap exactly on the glued collar band (checkerboarded there).
+const CHART_TOP: [f64; 3] = [0.35, 0.85, 0.95];
+const CHART_BOT: [f64; 3] = [0.95, 0.55, 0.65];
+
+/// Collar "cuff" tints — the material that actually gets glued: bright
+/// yellow above, violet below, matching the prepared rims of the classic
+/// two-chart construction figure.
+const COLLAR_TOP: [f64; 3] = [1.0, 0.88, 0.30];
+const COLLAR_BOT: [f64; 3] = [0.75, 0.62, 1.0];
+
 // ── render ────────────────────────────────────────────────────────────────
 
 /// Render one frame.
@@ -234,7 +270,11 @@ pub fn render(
 
     let mut recs: Vec<(f64, Vec<f64>)> = Vec::with_capacity(quads.len() + segs.len() + 16);
 
-    for q in &quads {
+    let (r_cut, _) = weld_geometry(c);
+    let per_half = (c.rings_half.max(2) * c.segs.max(3)) as usize;
+    let m = c.segs.max(3) as usize;
+
+    for (idx, q) in quads.iter().enumerate() {
         let v0 = view(&q.p[0]);
         let v1 = view(&q.p[1]);
         let v2 = view(&q.p[2]);
@@ -249,11 +289,35 @@ pub fn render(
         let n = norm3(cross3(sub3(v1, v0), sub3(v3, v0)));
         let shade = 0.42 + 0.58 * dot3(n, l).abs();
         let base = if color_mode == 0 { classic(q.u) } else { spectrum(q.u) };
-        let col = [base[0] * shade, base[1] * shade, base[2] * shade];
+        let in_collar = q.r_in < collar_radius(r_cut);
+
+        // optional didactic recolorings (they change surface colors only)
+        let mut col = base;
+        if c.charts_mode == 1 {
+            let within = idx % per_half;
+            let (ring, seg) = (within / m, within % m);
+            if in_collar {
+                // the overlap strip: both charts cover the glued collar band
+                col = if (ring + seg) % 2 == 0 {
+                    mix(base, CHART_TOP, 0.45)
+                } else {
+                    mix(base, CHART_BOT, 0.45)
+                };
+            } else if q.u >= 0.0 {
+                col = mix(base, CHART_TOP, 0.45); // chart U₁ covers the upper half
+            } else {
+                col = mix(base, CHART_BOT, 0.45); // chart U₂ covers the lower half
+            }
+        } else if c.show_collars && in_collar {
+            let t = collar_fade(q.r_in, r_cut);
+            let tint = if q.u >= 0.0 { COLLAR_TOP } else { COLLAR_BOT };
+            col = mix(base, tint, 0.85 * t);
+        }
+        let lit = [col[0] * shade, col[1] * shade, col[2] * shade];
 
         recs.push((
             depth,
-            vec![0.0, depth, x0, y0, x1, y1, x2, y2, x3, y3, col[0] * 255.0, col[1] * 255.0, col[2] * 255.0],
+            vec![0.0, depth, x0, y0, x1, y1, x2, y2, x3, y3, lit[0] * 255.0, lit[1] * 255.0, lit[2] * 255.0],
         ));
     }
 
@@ -266,6 +330,25 @@ pub fn render(
             (da + db) / 2.0 + sg.bias,
             vec![1.0, (da + db) / 2.0 + sg.bias, xa, ya, xb, yb, sg.col[0] * 255.0, sg.col[1] * 255.0, sg.col[2] * 255.0, sg.wpx],
         ));
+    }
+
+    // ── glued seam: the identified boundary circle (dashed ring) ──
+    // The throat is where the two collar neighborhoods were glued; the seam
+    // marks that identified circle S¹ so the construction stays visible in
+    // the finished manifold instead of being swept under the rug.
+    if c.show_seam && c.weld > 0.999 {
+        const DASHES: u32 = 24;
+        let dash = TAU / DASHES as f64 / 2.0;
+        for k in 0..DASHES {
+            let a0 = k as f64 * 2.0 * dash;
+            let a1 = a0 + dash;
+            let va = view(&[r_cut * a0.cos(), r_cut * a0.sin(), 0.0]);
+            let vb = view(&[r_cut * a1.cos(), r_cut * a1.sin(), 0.0]);
+            let (xa, ya, da) = proj(&va);
+            let (xb, yb, db) = proj(&vb);
+            let d = (da + db) / 2.0 - 0.0005;
+            recs.push((d, vec![1.0, d, xa, ya, xb, yb, 0.85 * 255.0, 0.97 * 255.0, 1.0 * 255.0, 2.2]));
+        }
     }
 
     // ── traveler: a particle sliding along the surface through the throat ──
@@ -330,7 +413,17 @@ mod tests {
     use super::*;
 
     fn cfg(weld: f64) -> ShapeCfg {
-        ShapeCfg { profile: 0, q: 0.3, stretch: 1.4, weld, rings_half: 8, segs: 24 }
+        ShapeCfg {
+            profile: 0,
+            q: 0.3,
+            stretch: 1.4,
+            weld,
+            rings_half: 8,
+            segs: 24,
+            show_collars: false,
+            charts_mode: 0,
+            show_seam: false,
+        }
     }
 
     #[test]
@@ -409,5 +502,54 @@ mod tests {
             let r = profile_r(0, 0.3, zb.abs()).min(0.985);
             assert!((0.29..=0.99).contains(&r));
         }
+    }
+
+    #[test]
+    fn collar_band_is_annulus_near_the_hole() {
+        let r_cut = 0.3;
+        assert!(collar_radius(r_cut) > r_cut, "collar is a band, not a line");
+        assert!(collar_fade(r_cut, r_cut) > 0.999, "strongest at the rim");
+        assert!(collar_fade(1.0, r_cut) < 1e-9, "nothing at the outer edge");
+        assert!(collar_fade((r_cut + collar_radius(r_cut)) / 2.0, r_cut) > 0.4);
+    }
+
+    #[test]
+    fn didactic_modes_change_the_draw_list() {
+        let plain = render(640, 480, 0.7, 0.5, 1.0, &cfg(1.0), 0, -1.0);
+        let mut c2 = cfg(1.0);
+        c2.charts_mode = 1;
+        let charts = render(640, 480, 0.7, 0.5, 1.0, &c2, 0, -1.0);
+        let mut c3 = cfg(1.0);
+        c3.show_collars = true;
+        let collars = render(640, 480, 0.7, 0.5, 1.0, &c3, 0, -1.0);
+        assert_ne!(plain, charts, "two-charts view must recolor the surface");
+        assert_ne!(plain, collars, "collar highlight must recolor the surface");
+    }
+
+    #[test]
+    fn seam_ring_appears_only_when_welded() {
+        let count_lines = |dl: &[f64]| {
+            let mut n = 0usize;
+            let mut i = 0usize;
+            while i < dl.len() {
+                if dl[i] == 1.0 {
+                    n += 1;
+                }
+                i += match dl[i] as u32 { 0 => 13, 1 => 10, _ => 8 };
+            }
+            n
+        };
+        let without = render(640, 480, 0.7, 0.5, 1.0, &cfg(1.0), 0, -1.0);
+        let mut c = cfg(1.0);
+        c.show_seam = true;
+        let with = render(640, 480, 0.7, 0.5, 1.0, &c, 0, -1.0);
+        let mut c0 = cfg(0.0);
+        c0.show_seam = true;
+        let unwelded = render(640, 480, 0.7, 0.5, 1.0, &c0, 0, -1.0);
+        // two outline rings of m segs each, plus the 24 dashed seam arcs
+        assert_eq!(count_lines(&without), 2 * 24);
+        assert_eq!(count_lines(&with), 2 * 24 + 24);
+        // unwelded: glowing inner rims (2·m) + outlines (2·m), no seam dashes
+        assert_eq!(count_lines(&unwelded), 4 * 24, "no seam while the sheets are cut apart");
     }
 }

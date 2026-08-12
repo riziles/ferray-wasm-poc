@@ -71,14 +71,25 @@ recs.sort_by(|a, b| b.depth.cmp(a.depth));            // far → near`;
     <pre class="code-block p-4 overflow-x-auto text-xs"><code>{ellis}
 {flamm}</code></pre>
 
-    <h3 class="h3 mt-4">The construction slider</h3>
+    <h3 class="h3 mt-4">The construction slider — gluing collar neighborhoods</h3>
     <p class="text-surface-300">
-      Topologically, the diagram is built the way the screenshot that inspired this demo shows:
-      take two copies of the plane, cut a disk out of each, and <em>identify</em> (glue) the two
-      boundary circles. The glued circle sweeps out the throat
-      (<code class="code-block">S¹ × ℝ</code>). Drag the <strong>construction</strong> slider to
-      0% to cut the sheets apart (glowing rims = the boundary circles), then back to 100% to weld
-      them into one continuous manifold.
+      Topologically this is a <strong>connected sum</strong>: take two copies of the plane, cut a
+      disk out of each, and <em>identify</em> (glue) the two boundary circles. To make the join
+      smooth you don't glue just the circles — you glue their <strong>collar neighborhoods</strong>:
+      the thin annular "cuffs" just inside each boundary circle. The two cuffs become one region:
+      the throat (<code class="code-block">S¹ × ℝ</code>). Drag the <strong>construction</strong>
+      slider to 0% to cut the sheets apart (glowing rims = the boundary circles; toggle
+      <strong>collars</strong> to tint the cuffs themselves, yellow above and violet below), then
+      back to 100% to glue the collars into one continuous manifold.
+    </p>
+    <p class="text-surface-300">
+      Note the two-sheet picture and the finished tube describe <em>the same space</em> — the
+      two-sheet version just uses <strong>two charts</strong> (one per sheet, overlapping on the
+      collar band), while the welded version uses one. The <strong>two charts</strong> toggle
+      recolors the surface accordingly: chart U₁ covers the upper half, chart U₂ the lower half,
+      and the checkerboard strip around the throat is exactly the overlap — the glued collar band.
+      The <strong>glued seam</strong> toggle dashes the identified circle itself, so the
+      construction stays visible in the finished manifold.
     </p>
 
     <h3 class="h3 mt-4">What it is <em>not</em></h3>
