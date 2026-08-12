@@ -566,41 +566,28 @@ fn render_planes(
     }
 
     // ── traveler on the two-chart pictures ──
-    // Same world-space trajectory as panel 3. Outside the collar the traveler
-    // lives on exactly one sheet (charts overlap only in the collar band);
-    // inside it appears on both at the identified point, with a slight
-    // dilation that vanishes at the glued circle (the charts agree there).
-    // The copy and the dashed connector fade in with collar depth.
-    //
-    // Crucial continuity detail: the traveler's worldline is smooth. It
-    // orbits at angle θ on the top sheet; the orientation-reversing glue
-    // θ ↦ −θ means its continuation on the bottom sheet orbits at −θ. Each
-    // sheet's dot therefore stays put through the crossing — the two dots
-    // never swap places, which is what made the old version look like it
-    // was jumping.
+    // The two-chart picture uses the same canonical radius and height as the
+    // embedding. Only the chart coordinate changes: the top chart reads θ,
+    // while the bottom chart reads the identified point as −θ. Presence fades
+    // between the charts across the collar, but neither chart gets a second
+    // angular or radial trajectory.
     if traveler_t >= 0.0 {
         let state = traveler_state(c.profile, q, traveler_t);
         let r = state.radius;
-        let zb = state.height;
-        let th = state.theta; // the traveler's continuous embedding angle
+        let th = state.theta;
         // presence: 0 at the collar's outer edge → 1 at the boundary circle
         let p = ((collar_radius(q) - r) / (collar_radius(q) - q).max(1e-9)).clamp(0.0, 1.0);
-        // dilation of the copy's reading; fades to 0 at the glued circle so
-        // the two charts agree exactly there and nothing jumps at the crossing
-        let wob = 0.15 * (traveler_t * 0.7).sin() * (1.0 - p);
-        let r2 = (r * (0.94 + 0.06 * p)).max(q * 1.01);
 
-        let (top_ang, bot_ang, top_pres, bot_pres) = if zb >= 0.0 {
-            (th, -th + wob, 1.0, p)
+        let (top_ang, bot_ang, top_pres, bot_pres) = if state.height >= 0.0 {
+            (th, -th, 1.0, p)
         } else {
-            (th + wob, -th, p, 1.0)
+            (th, -th, p, 1.0)
         };
         let dots: [([f64; 3], f64); 2] = [
             // top sheet dot
             ([r * top_ang.cos(), r * top_ang.sin(), gap], top_pres),
-            // bottom sheet dot (the identified point, in the bottom chart's
-            // mirrored coordinates)
-            ([r2 * bot_ang.cos(), r2 * bot_ang.sin(), -gap], bot_pres),
+            // bottom sheet dot, in its own mirrored chart
+            ([r * bot_ang.cos(), r * bot_ang.sin(), -gap], bot_pres),
         ];
 
         for (pnt, pres) in &dots {
@@ -824,6 +811,17 @@ mod tests {
         assert_eq!(bot(1.0), COLLAR_YELLOW);
         // they meet in the middle
         assert_eq!(top(0.5), bot(0.5));
+    }
+
+    #[test]
+    fn two_chart_traveler_is_an_exact_angle_mirror() {
+        for t in [0.0, 0.4, 1.7, 2.4, 4.0] {
+            let state = traveler_state(0, 0.3, t);
+            let top = [state.radius * state.theta.cos(), state.radius * state.theta.sin()];
+            let bottom = [state.radius * (-state.theta).cos(), state.radius * (-state.theta).sin()];
+            assert!((top[0] - bottom[0]).abs() < 1e-12, "x coordinate must be reflected");
+            assert!((top[1] + bottom[1]).abs() < 1e-12, "y coordinate must be reflected");
+        }
     }
 
     #[test]
