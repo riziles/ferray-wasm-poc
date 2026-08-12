@@ -255,8 +255,9 @@
         ></canvas>
         <p class="text-xs text-surface-400">
           Matching colors = the same point: the collars get glued, colors running in opposite order
-          (orientation-reversing). Inside the colored band both charts cover the traveler — slightly
-          different on each sheet (dilation), joined by the dashed connector.
+          (orientation-reversing). The colored band is the overlap both charts cover — the dashed
+          connector (and the second traveler dot) fade in only there: outside the collars the two
+          sheets are separate universes, so the traveler has no second copy.
         </p>
       </div>
 

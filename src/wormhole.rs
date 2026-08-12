@@ -556,44 +556,50 @@ fn render_planes(
     }
 
     // ── traveler on the two-chart pictures ──
-    // Same world-space trajectory as panel 3. While outside the collar the
-    // traveler lives on exactly one sheet; once it enters the collar (the
-    // region both charts cover), it appears on both at the identified point,
-    // with a slight dilation so the two charts don't read it identically.
+    // Same world-space trajectory as panel 3. Outside the collar the traveler
+    // lives on exactly one sheet (charts overlap only in the collar band).
+    // Inside it, it appears on both at the identified point, with a slight
+    // dilation. The second copy and the dashed connector fade in with the
+    // traveler's depth in the collar, so nothing pops on/off abruptly.
     if traveler_t >= 0.0 {
         let amp = (1.0 - q * 0.35).min(0.97);
         let zb = amp * profile_z(c.profile, q, 0.95) * (traveler_t * 0.8).cos();
         let r = profile_r(c.profile, q, zb.abs()).min(0.985);
         let th = traveler_t * 1.9;
-        let in_collar = r <= collar_radius(q);
+        // presence: 0 at the collar's outer edge → 1 at the boundary circle
+        let p = ((collar_radius(q) - r) / (collar_radius(q) - q).max(1e-9)).clamp(0.0, 1.0);
 
-        let mut dots: Vec<([f64; 3], f64)> = Vec::new(); // (world point, hue)
+        let mut dots: Vec<([f64; 3], f64, f64)> = Vec::new(); // (point, hue, presence)
         let h_top = (th / TAU) - (th / TAU).floor();
         let pz = if zb >= 0.0 { gap } else { -gap };
-        dots.push(([r * th.cos(), r * th.sin(), pz], h_top));
-        if in_collar {
+        dots.push(([r * th.cos(), r * th.sin(), pz], h_top, 1.0));
+        if p > 0.0 {
             // dilation: the other chart reads a slightly different radius/angle
             let wob = 0.15 * (traveler_t * 0.7).sin();
             let r2 = (r * 0.94).clamp(q * 1.03, 0.99);
             let th2 = -th + wob;
             let h2 = (th2 / TAU) - (th2 / TAU).floor();
-            dots.push(([r2 * th2.cos(), r2 * th2.sin(), -pz], h2));
+            dots.push(([r2 * th2.cos(), r2 * th2.sin(), -pz], h2, p));
         }
 
-        for (p, h) in &dots {
-            let v = view3(p);
+        for (pnt, h, pres) in &dots {
+            let v = view3(pnt);
             let (x, y, d) = proj(&v);
             let kpersp = f / (f + d);
-            let rad = 0.045 * kpersp * s;
-            let col = if view == 1 { hue_rgb(*h) } else { [1.0, 0.72, 0.20] };
-            recs.push((d - 0.002, vec![2.0, d - 0.002, x, y, rad, col[0] * 255.0, col[1] * 255.0, col[2] * 255.0]));
-            recs.push((d - 0.003, vec![2.0, d - 0.003, x, y, rad * 0.45, 255.0, 250.0, 230.0]));
+            let rad = 0.045 * kpersp * s * pres;
+            if rad > 0.05 {
+                let col = if view == 1 { hue_rgb(*h) } else { [1.0, 0.72, 0.20] };
+                recs.push((d - 0.002, vec![2.0, d - 0.002, x, y, rad, col[0] * 255.0, col[1] * 255.0, col[2] * 255.0]));
+                recs.push((d - 0.003, vec![2.0, d - 0.003, x, y, rad * 0.45, 255.0, 250.0, 230.0]));
+            }
         }
 
-        // dashed connector: the two appearances are the same traveler
-        if in_collar && dots.len() == 2 {
+        // dashed connector: the two appearances are the same traveler; it
+        // fades in/out with the overlap (brightness and width both ramp)
+        if p > 0.0 && dots.len() == 2 {
             let pa = dots[0].0;
             let pb = dots[1].0;
+            let mixc = |a: f64, b: f64| a + (b - a) * p;
             for k in 0..10 {
                 let t0 = k as f64 / 10.0;
                 let t1 = (k as f64 + 0.45) / 10.0;
@@ -605,7 +611,7 @@ fn render_planes(
                 let (xa, ya, da) = proj(&va);
                 let (xb, yb, db) = proj(&vb);
                 let d = (da + db) / 2.0 - 0.01;
-                recs.push((d, vec![1.0, d, xa, ya, xb, yb, 255.0, 255.0, 255.0, 1.6]));
+                recs.push((d, vec![1.0, d, xa, ya, xb, yb, mixc(0.24, 1.0) * 255.0, mixc(0.28, 1.0) * 255.0, mixc(0.42, 1.0) * 255.0, 1.6 * p]));
             }
         }
     }

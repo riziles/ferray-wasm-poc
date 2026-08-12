@@ -90,8 +90,8 @@ recs.sort_by(|a, b| b.depth.cmp(a.depth));            // far → near`;
         <strong>② Gluing the collars (identification)</strong> — matching colors are the same
         point: the rim colors run in <em>opposite order</em> on the two disks, because the glue map
         is orientation-reversing (θ ↦ −θ). The colored band is the overlap region both charts
-        cover; once the traveler enters it, it appears on both sheets — reading slightly differently
-        on each (dilation) — joined by a dashed connector.
+        cover; the dashed connector (and the traveler's second appearance) fade in only there —
+        outside the collars the two sheets are separate universes, each point in exactly one chart.
       </li>
       <li>
         <strong>③ One chart (the embedding)</strong> — the smooth 3D throat is the same space,
