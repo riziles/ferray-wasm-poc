@@ -76,6 +76,29 @@ pub struct ShapeCfg {
     pub show_seam: bool,    // dashed ring on the glued boundary circle
 }
 
+/// Canonical traveler state shared by every illustration.
+///
+/// `theta` is the continuous embedding angle. The two-chart renderer applies
+/// its bottom-chart transition (`theta_bottom = -theta`) separately; it must
+/// not invent a second trajectory for the same traveler.
+#[derive(Clone, Copy, Debug)]
+struct TravelerState {
+    radius: f64,
+    height: f64,
+    theta: f64,
+}
+
+fn traveler_state(profile: u32, q: f64, t: f64) -> TravelerState {
+    let amp = (1.0 - q * 0.35).min(0.97);
+    let height = amp * profile_z(profile, q, 0.95) * (t * 0.8).cos();
+    let radius = profile_r(profile, q, height.abs()).min(0.985);
+    TravelerState {
+        radius,
+        height,
+        theta: t * 1.9,
+    }
+}
+
 fn weld_geometry(c: &ShapeCfg) -> (f64, f64) {
     // inner hole radius grows as the sheets are cut apart
     let r0 = c.q.max(0.35);
@@ -370,15 +393,16 @@ pub fn render(
     // ── traveler: a particle sliding along the surface through the throat ──
     // (only makes sense once the manifold is actually welded together)
     if traveler_t >= 0.0 && c.weld > 0.999 {
-        let (r_cut, gap) = weld_geometry(c);
-        let amp = (1.0 - r_cut * 0.35).min(0.97); // base-height amplitude
+        let (_, gap) = weld_geometry(c);
         for k in (0..=10).rev() {
             let tt = traveler_t - k as f64 * 0.05;
-            let zb = amp * profile_z(c.profile, c.q, 0.95) * (tt * 0.8).cos();
-            let sgn = if zb >= 0.0 { 1.0 } else { -1.0 };
-            let r = profile_r(c.profile, c.q, zb.abs()).min(0.985);
-            let th = tt * 1.9;
-            let p = [r * th.cos(), r * th.sin(), sgn * (zb.abs() * c.stretch + gap)];
+            let state = traveler_state(c.profile, c.q, tt);
+            let sgn = if state.height >= 0.0 { 1.0 } else { -1.0 };
+            let p = [
+                state.radius * state.theta.cos(),
+                state.radius * state.theta.sin(),
+                sgn * (state.height.abs() * c.stretch + gap),
+            ];
             let v = view(&p);
             let (x, y, d) = proj(&v);
             let kpersp = f / (f + d);
@@ -555,10 +579,10 @@ fn render_planes(
     // never swap places, which is what made the old version look like it
     // was jumping.
     if traveler_t >= 0.0 {
-        let amp = (1.0 - q * 0.35).min(0.97);
-        let zb = amp * profile_z(c.profile, q, 0.95) * (traveler_t * 0.8).cos();
-        let r = profile_r(c.profile, q, zb.abs()).min(0.985);
-        let th = traveler_t * 1.9; // the traveler's own (top-chart) angle
+        let state = traveler_state(c.profile, q, traveler_t);
+        let r = state.radius;
+        let zb = state.height;
+        let th = state.theta; // the traveler's continuous embedding angle
         // presence: 0 at the collar's outer edge → 1 at the boundary circle
         let p = ((collar_radius(q) - r) / (collar_radius(q) - q).max(1e-9)).clamp(0.0, 1.0);
         // dilation of the copy's reading; fades to 0 at the glued circle so
