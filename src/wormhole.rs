@@ -99,6 +99,16 @@ fn traveler_state(profile: u32, q: f64, t: f64) -> TravelerState {
     }
 }
 
+/// Map a sheet-chart angle into the shared drawing frame.
+///
+/// The bottom chart is orientation-reversed relative to the embedding frame.
+/// Consequently its coordinate φ = −θ maps to the same physical `(x, y)` as
+/// the top/embedding angle θ.
+fn sheet_point(radius: f64, angle: f64, z: f64, bottom: bool) -> [f64; 3] {
+    let orientation = if bottom { -1.0 } else { 1.0 };
+    [radius * angle.cos(), orientation * radius * angle.sin(), z]
+}
+
 fn weld_geometry(c: &ShapeCfg) -> (f64, f64) {
     // inner hole radius grows as the sheets are cut apart
     let r0 = c.q.max(0.35);
@@ -136,7 +146,7 @@ fn build_mesh(c: &ShapeCfg) -> (Vec<Quad>, Vec<Seg>) {
                 (0..m)
                     .map(|j| {
                         let th = TAU * j as f64 / m as f64;
-                        [r * th.cos(), r * th.sin(), z]
+                        sheet_point(r, th, z, half == 1)
                     })
                     .collect()
             })
@@ -485,7 +495,7 @@ fn render_planes(
                 (0..m)
                     .map(|j| {
                         let th = TAU * j as f64 / m as f64;
-                        [r * th.cos(), r * th.sin(), z0]
+                        sheet_point(r, th, z0, half == 1)
                     })
                     .collect()
             })
@@ -552,8 +562,8 @@ fn render_planes(
             for r in [0.6, 0.82] {
                 for j in 0..m {
                     let j2 = (j + 1) % m;
-                    let pa = [r * (TAU * j as f64 / m as f64).cos(), r * (TAU * j as f64 / m as f64).sin(), z0];
-                    let pb = [r * (TAU * j2 as f64 / m as f64).cos(), r * (TAU * j2 as f64 / m as f64).sin(), z0];
+                    let pa = sheet_point(r, TAU * j as f64 / m as f64, z0, half == 1);
+                    let pb = sheet_point(r, TAU * j2 as f64 / m as f64, z0, half == 1);
                     let va = view3(&pa);
                     let vb = view3(&pb);
                     let (xa, ya, da) = proj(&va);
@@ -585,9 +595,9 @@ fn render_planes(
         };
         let dots: [([f64; 3], f64); 2] = [
             // top sheet dot
-            ([r * top_ang.cos(), r * top_ang.sin(), gap], top_pres),
+            (sheet_point(r, top_ang, gap, false), top_pres),
             // bottom sheet dot, in its own mirrored chart
-            ([r * bot_ang.cos(), r * bot_ang.sin(), -gap], bot_pres),
+            (sheet_point(r, bot_ang, -gap, true), bot_pres),
         ];
 
         for (pnt, pres) in &dots {
@@ -811,6 +821,16 @@ mod tests {
         assert_eq!(bot(1.0), COLLAR_YELLOW);
         // they meet in the middle
         assert_eq!(top(0.5), bot(0.5));
+    }
+
+    #[test]
+    fn bottom_chart_mirror_maps_to_same_drawing_position() {
+        let theta = 1.234;
+        let top = sheet_point(0.7, theta, 0.85, false);
+        let bottom = sheet_point(0.7, -theta, -0.85, true);
+        assert!((top[0] - bottom[0]).abs() < 1e-12);
+        assert!((top[1] - bottom[1]).abs() < 1e-12);
+        assert!((top[2] + bottom[2]).abs() < 1e-12);
     }
 
     #[test]
