@@ -93,7 +93,8 @@ recs.sort_by(|a, b| b.depth.cmp(a.depth));            // far → near`;
         colors" flips. Glue them and the pair becomes the throat's yellow → indigo gradient (③).
         The dashed connector fades in only inside the overlap — outside the collars the two sheets
         are separate universes, each point in exactly one chart. The bottom sheet is read in its own
-        mirrored chart (θ ↦ −θ), so the traveler sits antipodal to the embedding's.
+        mirrored chart (θ ↦ −θ), and that chart's drawing frame is mirrored too, so the identified
+        point lines up with the embedding's physical position.
       </li>
       <li>
         <strong>③ One chart (the embedding)</strong> — the smooth 3D throat is the same space,

@@ -441,12 +441,12 @@ pub fn render(
 
 // ── panels 1 & 2: the two-chart pictures ─────────────────────────────────
 // Two flat parallel planes (annuli) with the boundary circles that get
-// glued. Panel 1 shows them plain, with glowing rims. Panel 2 paints the
-// collar neighborhoods with an orientation-reversing hue mapping — the
-// colors run clockwise on the top rim and counter-clockwise on the bottom,
-// so matching colors are the points that get identified. Inside the collar
-// the traveler appears on BOTH sheets (the two charts overlap there) with
-// a dashed connector; outside it, only on the sheet it's actually on.
+// glued. Panel 1 shows them plain, with neutral outlines. Panel 2 paints the
+// collar neighborhoods with the source figure's radial yellow/indigo scheme.
+// The bottom chart is drawn through the orientation-reversing frame map, so
+// its coordinate φ = −θ lands at the same physical angle as the embedding.
+// Inside the collar the traveler appears on BOTH sheets (the two charts
+// overlap there) with a dashed connector; outside it, only on its sheet.
 
 fn render_planes(
     w: u32,

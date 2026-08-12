@@ -259,8 +259,8 @@
           bottom. Glue them and the gradient flows yellow → indigo down the throat (③). The dashed
           connector (and second traveler dot) fade in only inside the overlap — outside the collars
           the two sheets are separate universes, so the traveler has no second copy. The bottom
-          sheet is read in its own mirrored chart (θ ↦ −θ) — that's why the traveler sits antipodal
-          to panel ③'s.
+          sheet is read in its own mirrored chart (θ ↦ −θ), and that chart's drawing frame is
+          mirrored too — so the identified point lines up with panel ③'s physical position.
         </p>
       </div>
 
