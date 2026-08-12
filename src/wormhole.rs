@@ -220,6 +220,27 @@ const CHART_BOT: [f64; 3] = [0.95, 0.55, 0.65];
 const COLLAR_TOP: [f64; 3] = [1.0, 0.88, 0.30];
 const COLLAR_BOT: [f64; 3] = [0.75, 0.62, 1.0];
 
+/// Neutral body color of the sheets in panel 2 (kept light enough to read
+/// as solid planes against the dark background).
+const PLANE_BODY: [f64; 3] = [0.24, 0.28, 0.42];
+
+/// Rainbow hue at h ∈ [0, 1) — the identification color mapping: each hue
+/// around the boundary circle of one sheet is declared "the same point" as
+/// the matching hue on the other sheet.
+fn hue_rgb(h: f64) -> [f64; 3] {
+    let h = h - h.floor();
+    let x = 1.0 - ((h * 6.0) % 2.0 - 1.0).abs();
+    let (r, g, b) = match (h * 6.0) as u32 {
+        0 => (1.0, x, 0.0),
+        1 => (x, 1.0, 0.0),
+        2 => (0.0, 1.0, x),
+        3 => (0.0, x, 1.0),
+        4 => (x, 0.0, 1.0),
+        _ => (1.0, 0.0, x),
+    };
+    [r, g, b]
+}
+
 // ── render ────────────────────────────────────────────────────────────────
 
 /// Render one frame.
@@ -232,6 +253,11 @@ const COLLAR_BOT: [f64; 3] = [0.75, 0.62, 1.0];
 /// * dot:  `[2, depth, x, y, radius, r,g,b]`               (8 floats)
 ///
 /// `traveler_t` < 0 disables the falling-traveler particle.
+///
+/// `view` selects which illustration to draw:
+/// * 0 — panel 1: the two flat sheets, cut apart (two charts, before gluing)
+/// * 1 — panel 2: the same sheets with the collar identification color map
+/// * 2 — panel 3: the smooth 3D embedding (one chart)
 pub fn render(
     w: u32,
     h: u32,
@@ -241,7 +267,11 @@ pub fn render(
     c: &ShapeCfg,
     color_mode: u32,
     traveler_t: f64,
+    view: u32,
 ) -> Vec<f64> {
+    if view <= 1 {
+        return render_planes(w, h, yaw, pitch, zoom, c, view, traveler_t);
+    }
     let (quads, segs) = build_mesh(c);
 
     let (cyaw, syaw) = (yaw.cos(), yaw.sin());
@@ -356,9 +386,8 @@ pub fn render(
     if traveler_t >= 0.0 && c.weld > 0.999 {
         let (r_cut, gap) = weld_geometry(c);
         let amp = (1.0 - r_cut * 0.35).min(0.97); // base-height amplitude
-        let bg = [14.0, 16.0, 32.0];
-        for k in (0..=20).rev() {
-            let tt = traveler_t - k as f64 * 0.035;
+        for k in (0..=10).rev() {
+            let tt = traveler_t - k as f64 * 0.05;
             let zb = amp * profile_z(c.profile, c.q, 0.95) * (tt * 0.8).cos();
             let sgn = if zb >= 0.0 { 1.0 } else { -1.0 };
             let r = profile_r(c.profile, c.q, zb.abs()).min(0.985);
@@ -367,9 +396,11 @@ pub fn render(
             let v = view(&p);
             let (x, y, d) = proj(&v);
             let kpersp = f / (f + d);
-            let fade = 1.0 - k as f64 / 22.0;
-            let glow = mix([bg[0] / 255.0, bg[1] / 255.0, bg[2] / 255.0], [1.0, 0.72, 0.20], fade);
-            let core = mix([bg[0] / 255.0, bg[1] / 255.0, bg[2] / 255.0], [1.0, 0.98, 0.90], fade);
+            let fade = 1.0 - k as f64 / 11.0;
+            // short comet trail: fades to a warm dim orange, never to the
+            // background (which read as dark smudges on the surface)
+            let glow = mix([0.45, 0.32, 0.12], [1.0, 0.72, 0.20], fade);
+            let core = mix([0.55, 0.45, 0.25], [1.0, 0.98, 0.90], fade);
             let rad = 0.038 * kpersp * s * (1.0 + 0.5 * (1.0 - fade));
             recs.push((d - 0.001, vec![2.0, d - 0.001, x, y, rad, glow[0] * 255.0, glow[1] * 255.0, glow[2] * 255.0]));
             if k == 0 {
@@ -381,6 +412,205 @@ pub fn render(
     // painter's algorithm: far first
     recs.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
 
+    let mut out = Vec::with_capacity(recs.len() * 12);
+    for (_, rec) in recs {
+        out.extend(rec);
+    }
+    out
+}
+
+// ── panels 1 & 2: the two-chart pictures ─────────────────────────────────
+// Two flat parallel planes (annuli) with the boundary circles that get
+// glued. Panel 1 shows them plain, with glowing rims. Panel 2 paints the
+// collar neighborhoods with an orientation-reversing hue mapping — the
+// colors run clockwise on the top rim and counter-clockwise on the bottom,
+// so matching colors are the points that get identified. Inside the collar
+// the traveler appears on BOTH sheets (the two charts overlap there) with
+// a dashed connector; outside it, only on the sheet it's actually on.
+
+fn render_planes(
+    w: u32,
+    h: u32,
+    yaw: f64,
+    pitch: f64,
+    zoom: f64,
+    c: &ShapeCfg,
+    view: u32,
+    traveler_t: f64,
+) -> Vec<f64> {
+    let q = c.q.max(0.05);
+    let gap = 0.85; // fixed separation: this is an illustration, not the weld morph
+    let n = 6usize; // flat annuli need very few rings
+    let m = c.segs.max(3) as usize;
+
+    let (cyaw, syaw) = (yaw.cos(), yaw.sin());
+    let (cp, sp) = (pitch.cos(), pitch.sin());
+    let (cam_d, f) = (3.6f64, 3.0f64);
+    let s = 0.50 * (w.min(h)) as f64 * zoom * 0.9;
+    let cx = w as f64 / 2.0;
+    let cyc = h as f64 / 2.0;
+    let view3 = |p: &[f64; 3]| -> [f64; 3] {
+        let x1 = p[0] * cyaw - p[1] * syaw;
+        let y1 = p[0] * syaw + p[1] * cyaw;
+        [x1, y1 * sp + p[2] * cp, p[2] * sp - y1 * cp]
+    };
+    let proj = |v: &[f64; 3]| -> (f64, f64, f64) {
+        let dv = cam_d - v[2];
+        let k = f / (f + dv);
+        (cx + v[0] * k * s, cyc - v[1] * k * s, dv)
+    };
+    let l = norm3([-0.40, 0.55, 0.72]);
+
+    let mut recs: Vec<(f64, Vec<f64>)> = Vec::new();
+
+    // uniform ring radii from the rim q out to 1
+    let rs: Vec<f64> = (0..=n).map(|i| q + (1.0 - q) * (i as f64 / n as f64)).collect();
+
+    for half in 0..2u32 {
+        let sgn = if half == 0 { 1.0 } else { -1.0 };
+        let z0 = sgn * gap;
+        let rings: Vec<Vec<[f64; 3]>> = rs
+            .iter()
+            .map(|&r| {
+                (0..m)
+                    .map(|j| {
+                        let th = TAU * j as f64 / m as f64;
+                        [r * th.cos(), r * th.sin(), z0]
+                    })
+                    .collect()
+            })
+            .collect();
+
+        for i in 0..n {
+            for j in 0..m {
+                let j2 = (j + 1) % m;
+                let th_mid = TAU * (j as f64 + 0.5) / m as f64;
+                let r_mid = 0.5 * (rs[i] + rs[i + 1]);
+                let mut col = if half == 0 { [0.55, 0.93, 0.65] } else { [0.98, 0.64, 0.64] };
+                if view == 1 {
+                    if r_mid < collar_radius(q) {
+                        // the collar: identification gradient, fading outward from the rim
+                        let t = collar_fade(r_mid, q);
+                        let h = if half == 0 { th_mid / TAU } else { 1.0 - th_mid / TAU };
+                        col = mix(PLANE_BODY, hue_rgb(h), 0.35 + 0.65 * t);
+                    } else {
+                        col = PLANE_BODY; // neutral body
+                    }
+                }
+                let nrm = [0.0, 0.0, sgn as f64];
+                let shade = 0.55 + 0.45 * dot3(nrm, l).abs();
+                let lit = [col[0] * shade, col[1] * shade, col[2] * shade];
+
+                let pts = [rings[i][j], rings[i][j2], rings[i + 1][j2], rings[i + 1][j]];
+                let v0 = view3(&pts[0]);
+                let v1 = view3(&pts[1]);
+                let v2 = view3(&pts[2]);
+                let v3 = view3(&pts[3]);
+                let (x0, y0, d0) = proj(&v0);
+                let (x1, y1, d1) = proj(&v1);
+                let (x2, y2, _) = proj(&v2);
+                let (x3, y3, d3) = proj(&v3);
+                let depth = (d0 + d1 + d3) / 3.0;
+                recs.push((
+                    depth,
+                    vec![0.0, depth, x0, y0, x1, y1, x2, y2, x3, y3, lit[0] * 255.0, lit[1] * 255.0, lit[2] * 255.0],
+                ));
+            }
+        }
+
+        // the boundary circle (the rim that gets glued)
+        for j in 0..m {
+            let j2 = (j + 1) % m;
+            let th_mid = TAU * (j as f64 + 0.5) / m as f64;
+            let col = if view == 0 {
+                [1.0, 0.86, 0.35]
+            } else if half == 0 {
+                hue_rgb(th_mid / TAU)
+            } else {
+                hue_rgb(1.0 - th_mid / TAU)
+            };
+            let va = view3(&rings[0][j]);
+            let vb = view3(&rings[0][j2]);
+            let (xa, ya, da) = proj(&va);
+            let (xb, yb, db) = proj(&vb);
+            let d = (da + db) / 2.0 - 0.02;
+            recs.push((d, vec![1.0, d, xa, ya, xb, yb, col[0] * 255.0, col[1] * 255.0, col[2] * 255.0, 2.4]));
+        }
+
+        // faint concentric rings so the sheets read as flat planes (panel 1 only)
+        if view == 0 {
+            for r in [0.6, 0.82] {
+                for j in 0..m {
+                    let j2 = (j + 1) % m;
+                    let pa = [r * (TAU * j as f64 / m as f64).cos(), r * (TAU * j as f64 / m as f64).sin(), z0];
+                    let pb = [r * (TAU * j2 as f64 / m as f64).cos(), r * (TAU * j2 as f64 / m as f64).sin(), z0];
+                    let va = view3(&pa);
+                    let vb = view3(&pb);
+                    let (xa, ya, da) = proj(&va);
+                    let (xb, yb, db) = proj(&vb);
+                    let d = (da + db) / 2.0 - 0.015;
+                    recs.push((d, vec![1.0, d, xa, ya, xb, yb, 0.25 * 255.0, 0.30 * 255.0, 0.42 * 255.0, 1.0]));
+                }
+            }
+        }
+    }
+
+    // ── traveler on the two-chart pictures ──
+    // Same world-space trajectory as panel 3. While outside the collar the
+    // traveler lives on exactly one sheet; once it enters the collar (the
+    // region both charts cover), it appears on both at the identified point,
+    // with a slight dilation so the two charts don't read it identically.
+    if traveler_t >= 0.0 {
+        let amp = (1.0 - q * 0.35).min(0.97);
+        let zb = amp * profile_z(c.profile, q, 0.95) * (traveler_t * 0.8).cos();
+        let r = profile_r(c.profile, q, zb.abs()).min(0.985);
+        let th = traveler_t * 1.9;
+        let in_collar = r <= collar_radius(q);
+
+        let mut dots: Vec<([f64; 3], f64)> = Vec::new(); // (world point, hue)
+        let h_top = (th / TAU) - (th / TAU).floor();
+        let pz = if zb >= 0.0 { gap } else { -gap };
+        dots.push(([r * th.cos(), r * th.sin(), pz], h_top));
+        if in_collar {
+            // dilation: the other chart reads a slightly different radius/angle
+            let wob = 0.15 * (traveler_t * 0.7).sin();
+            let r2 = (r * 0.94).clamp(q * 1.03, 0.99);
+            let th2 = -th + wob;
+            let h2 = (th2 / TAU) - (th2 / TAU).floor();
+            dots.push(([r2 * th2.cos(), r2 * th2.sin(), -pz], h2));
+        }
+
+        for (p, h) in &dots {
+            let v = view3(p);
+            let (x, y, d) = proj(&v);
+            let kpersp = f / (f + d);
+            let rad = 0.045 * kpersp * s;
+            let col = if view == 1 { hue_rgb(*h) } else { [1.0, 0.72, 0.20] };
+            recs.push((d - 0.002, vec![2.0, d - 0.002, x, y, rad, col[0] * 255.0, col[1] * 255.0, col[2] * 255.0]));
+            recs.push((d - 0.003, vec![2.0, d - 0.003, x, y, rad * 0.45, 255.0, 250.0, 230.0]));
+        }
+
+        // dashed connector: the two appearances are the same traveler
+        if in_collar && dots.len() == 2 {
+            let pa = dots[0].0;
+            let pb = dots[1].0;
+            for k in 0..10 {
+                let t0 = k as f64 / 10.0;
+                let t1 = (k as f64 + 0.45) / 10.0;
+                let lerp = |t: f64| -> [f64; 3] {
+                    [pa[0] + (pb[0] - pa[0]) * t, pa[1] + (pb[1] - pa[1]) * t, pa[2] + (pb[2] - pa[2]) * t]
+                };
+                let va = view3(&lerp(t0));
+                let vb = view3(&lerp(t1));
+                let (xa, ya, da) = proj(&va);
+                let (xb, yb, db) = proj(&vb);
+                let d = (da + db) / 2.0 - 0.01;
+                recs.push((d, vec![1.0, d, xa, ya, xb, yb, 255.0, 255.0, 255.0, 1.6]));
+            }
+        }
+    }
+
+    recs.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
     let mut out = Vec::with_capacity(recs.len() * 12);
     for (_, rec) in recs {
         out.extend(rec);
@@ -471,7 +701,7 @@ mod tests {
 
     #[test]
     fn drawlist_sorted_bounded_and_parseable() {
-        let dl = render(800, 600, 0.7, 0.5, 1.0, &cfg(1.0), 0, -1.0);
+        let dl = render(800, 600, 0.7, 0.5, 1.0, &cfg(1.0), 0, -1.0, 2);
         assert!(!dl.is_empty());
         let mut i = 0usize;
         let mut last = f64::INFINITY;
@@ -515,13 +745,13 @@ mod tests {
 
     #[test]
     fn didactic_modes_change_the_draw_list() {
-        let plain = render(640, 480, 0.7, 0.5, 1.0, &cfg(1.0), 0, -1.0);
+        let plain = render(640, 480, 0.7, 0.5, 1.0, &cfg(1.0), 0, -1.0, 2);
         let mut c2 = cfg(1.0);
         c2.charts_mode = 1;
-        let charts = render(640, 480, 0.7, 0.5, 1.0, &c2, 0, -1.0);
+        let charts = render(640, 480, 0.7, 0.5, 1.0, &c2, 0, -1.0, 2);
         let mut c3 = cfg(1.0);
         c3.show_collars = true;
-        let collars = render(640, 480, 0.7, 0.5, 1.0, &c3, 0, -1.0);
+        let collars = render(640, 480, 0.7, 0.5, 1.0, &c3, 0, -1.0, 2);
         assert_ne!(plain, charts, "two-charts view must recolor the surface");
         assert_ne!(plain, collars, "collar highlight must recolor the surface");
     }
@@ -539,17 +769,73 @@ mod tests {
             }
             n
         };
-        let without = render(640, 480, 0.7, 0.5, 1.0, &cfg(1.0), 0, -1.0);
+        let without = render(640, 480, 0.7, 0.5, 1.0, &cfg(1.0), 0, -1.0, 2);
         let mut c = cfg(1.0);
         c.show_seam = true;
-        let with = render(640, 480, 0.7, 0.5, 1.0, &c, 0, -1.0);
+        let with = render(640, 480, 0.7, 0.5, 1.0, &c, 0, -1.0, 2);
         let mut c0 = cfg(0.0);
         c0.show_seam = true;
-        let unwelded = render(640, 480, 0.7, 0.5, 1.0, &c0, 0, -1.0);
+        let unwelded = render(640, 480, 0.7, 0.5, 1.0, &c0, 0, -1.0, 2);
         // two outline rings of m segs each, plus the 24 dashed seam arcs
         assert_eq!(count_lines(&without), 2 * 24);
         assert_eq!(count_lines(&with), 2 * 24 + 24);
         // unwelded: glowing inner rims (2·m) + outlines (2·m), no seam dashes
         assert_eq!(count_lines(&unwelded), 4 * 24, "no seam while the sheets are cut apart");
+    }
+
+    #[test]
+    fn hue_mapping_is_periodic() {
+        assert_eq!(hue_rgb(0.0), [1.0, 0.0, 0.0], "red at h=0");
+        assert_eq!(hue_rgb(1.0), [1.0, 0.0, 0.0], "hue wraps");
+        assert_eq!(hue_rgb(1.0 / 6.0), [1.0, 1.0, 0.0], "yellow at h=1/6");
+        assert_eq!(hue_rgb(0.5), [0.0, 1.0, 1.0], "cyan at h=1/2");
+        // the identification θ ↦ −θ sends the top rim's color at θ to the
+        // bottom rim's color at 1 − θ: the ORDER of the colors is reversed,
+        // which is the point of the mapping (orientation-reversing glue)
+        assert_eq!(hue_rgb(0.25), [0.5, 1.0, 0.0]);
+        assert_eq!(hue_rgb(0.75), [0.5, 0.0, 1.0]);
+        assert_ne!(hue_rgb(0.25), hue_rgb(0.75), "opposite angles get reversed colors");
+    }
+
+    #[test]
+    fn planes_views_traveler_enters_collar() {
+        let count = |dl: &[f64], tag: f64| {
+            let mut n = 0usize;
+            let mut i = 0usize;
+            while i < dl.len() {
+                if dl[i] == tag {
+                    n += 1;
+                }
+                i += match dl[i] as u32 { 0 => 13, 1 => 10, _ => 8 };
+            }
+            n
+        };
+        // t=0: high above the sheets (r ≈ 0.76 > collar) — one chart sees it.
+        // t=π/1.6: at the throat (r = q ≤ collar) — both charts see it.
+        // (each dot emits two tag-2 records: glow + core)
+        let t_in = std::f64::consts::PI / 1.6;
+        for view in [0u32, 1] {
+            let out = render(480, 360, 0.7, 0.5, 1.0, &cfg(1.0), 0, 0.0, view);
+            let inn = render(480, 360, 0.7, 0.5, 1.0, &cfg(1.0), 0, t_in, view);
+            assert_eq!(count(&out, 2.0), 2, "far from the hole: one chart sees the traveler");
+            assert_eq!(count(&inn, 2.0), 4, "inside the collar: both charts see it");
+            // dashed connector only while in the collar (view 0 adds two grid
+            // rings on each sheet: 2·2·m, so 6·m lines; view 1: 2·m rims)
+            let base_lines = if view == 0 { 6 * 24 } else { 2 * 24 };
+            assert_eq!(count(&out, 1.0), base_lines, "no connector outside the collar");
+            assert_eq!(count(&inn, 1.0), base_lines + 10, "dashed connector while in the collar");
+        }
+        // the plane views never include the 3D tube: exactly two flat annuli
+        let dl = render(480, 360, 0.7, 0.5, 1.0, &cfg(1.0), 0, -1.0, 1);
+        assert_eq!(count(&dl, 0.0), 2 * 6 * 24, "two flat annuli × 6 rings × 24 segs");
+        let mut last = f64::INFINITY;
+        let mut i = 0usize;
+        while i < dl.len() {
+            let d = dl[i + 1];
+            assert!(d <= last + 1e-9, "painter order violated");
+            last = d;
+            i += match dl[i] as u32 { 0 => 13, 1 => 10, _ => 8 };
+        }
+        assert_eq!(i, dl.len(), "plane draw list must parse exactly");
     }
 }
