@@ -557,30 +557,41 @@ fn render_planes(
 
     // ── traveler on the two-chart pictures ──
     // Same world-space trajectory as panel 3. Outside the collar the traveler
-    // lives on exactly one sheet (charts overlap only in the collar band).
-    // Inside it, it appears on both at the identified point, with a slight
-    // dilation. The second copy and the dashed connector fade in with the
-    // traveler's depth in the collar, so nothing pops on/off abruptly.
+    // lives on exactly one sheet (charts overlap only in the collar band);
+    // inside it appears on both at the identified point, with a slight
+    // dilation that vanishes at the glued circle (the charts agree there).
+    // The copy and the dashed connector fade in with collar depth.
+    //
+    // Crucial continuity detail: the traveler's worldline is smooth. It
+    // orbits at angle θ on the top sheet; the orientation-reversing glue
+    // θ ↦ −θ means its continuation on the bottom sheet orbits at −θ. Each
+    // sheet's dot therefore stays put through the crossing — the two dots
+    // never swap places, which is what made the old version look like it
+    // was jumping.
     if traveler_t >= 0.0 {
         let amp = (1.0 - q * 0.35).min(0.97);
         let zb = amp * profile_z(c.profile, q, 0.95) * (traveler_t * 0.8).cos();
         let r = profile_r(c.profile, q, zb.abs()).min(0.985);
-        let th = traveler_t * 1.9;
+        let th = traveler_t * 1.9; // the traveler's own (top-chart) angle
         // presence: 0 at the collar's outer edge → 1 at the boundary circle
         let p = ((collar_radius(q) - r) / (collar_radius(q) - q).max(1e-9)).clamp(0.0, 1.0);
+        // dilation of the copy's reading; fades to 0 at the glued circle so
+        // the two charts agree exactly there and nothing jumps at the crossing
+        let wob = 0.15 * (traveler_t * 0.7).sin() * (1.0 - p);
+        let r2 = (r * (0.94 + 0.06 * p)).max(q * 1.01);
 
-        let mut dots: Vec<([f64; 3], f64, f64)> = Vec::new(); // (point, hue, presence)
-        let h_top = (th / TAU) - (th / TAU).floor();
-        let pz = if zb >= 0.0 { gap } else { -gap };
-        dots.push(([r * th.cos(), r * th.sin(), pz], h_top, 1.0));
-        if p > 0.0 {
-            // dilation: the other chart reads a slightly different radius/angle
-            let wob = 0.15 * (traveler_t * 0.7).sin();
-            let r2 = (r * 0.94).clamp(q * 1.03, 0.99);
-            let th2 = -th + wob;
-            let h2 = (th2 / TAU) - (th2 / TAU).floor();
-            dots.push(([r2 * th2.cos(), r2 * th2.sin(), -pz], h2, p));
-        }
+        let (top_ang, bot_ang, top_pres, bot_pres) = if zb >= 0.0 {
+            (th, -th + wob, 1.0, p)
+        } else {
+            (-th, th + wob, p, 1.0)
+        };
+        let dots: [([f64; 3], f64, f64); 2] = [
+            // top sheet dot (hue in the top chart's convention)
+            ([r * top_ang.cos(), r * top_ang.sin(), gap], top_ang / TAU, top_pres),
+            // bottom sheet dot (hue in the bottom chart's convention, so
+            // matching colors really mean the identified point)
+            ([r2 * bot_ang.cos(), r2 * bot_ang.sin(), -gap], 1.0 - bot_ang / TAU, bot_pres),
+        ];
 
         for (pnt, h, pres) in &dots {
             let v = view3(pnt);
@@ -596,7 +607,7 @@ fn render_planes(
 
         // dashed connector: the two appearances are the same traveler; it
         // fades in/out with the overlap (brightness and width both ramp)
-        if p > 0.0 && dots.len() == 2 {
+        if p > 0.0 {
             let pa = dots[0].0;
             let pb = dots[1].0;
             let mixc = |a: f64, b: f64| a + (b - a) * p;
