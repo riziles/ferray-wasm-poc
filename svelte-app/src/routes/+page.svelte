@@ -13,6 +13,7 @@
   import CounterexampleLab from '$lib/CounterexampleLab.svelte';
   import BarbaultBasket from '$lib/BarbaultBasket.svelte';
   import Kan from '$lib/Kan.svelte';
+  import Wormhole from '$lib/Wormhole.svelte';
   import TechStack from '$lib/TechStack.svelte';
 
   const getWasm = getContext<() => WasmApi>('wasm');
@@ -21,6 +22,13 @@
 
 <div class="container mx-auto px-4 py-8 max-w-5xl space-y-12">
   <Hero />
+
+  <section class="group/demo border border-primary-700/40 rounded-lg p-4 bg-primary-950/10">
+    <a href="{base}/wormhole" data-sveltekit-prefetch class="block hover:text-primary-400 transition-colors">
+      <h2 class="h2 mb-4 cursor-pointer">🌀 Wormhole Embedding Diagram <span class="badge preset-filled-primary text-xs">NEW</span></h2>
+    </a>
+    <Wormhole {wasm} />
+  </section>
 
   <section class="group/demo border border-primary-700/40 rounded-lg p-4 bg-primary-950/10">
     <a href="{base}/kan" data-sveltekit-prefetch class="block hover:text-primary-400 transition-colors">

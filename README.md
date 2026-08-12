@@ -6,10 +6,11 @@ A signal processing and mathematical demo using [Ferray](https://github.com/doll
 
 ## Demos
 
-Eleven interactive demos running entirely in a ~880 KB WASM binary:
+Twelve interactive demos running entirely in a ~900 KB WASM binary:
 
 | Demo | Crates used | Description |
 |---|---|---|
+| 🌀 Wormhole Embedding Diagram | — (pure scalar Rust) | Interactive 3D Ellis/Flamm wormhole: weld morph, drag-orbit, throat traveler |
 | 🧠 Kolmogorov–Arnold Network | — (pure scalar Rust) | Live KAN training: B-spline edge functions fit 2D targets in-browser |
 | 📐 Sum of Squares | `ferray-core` | Interactive `Float64Array` → WASM → Σ x² |
 | 🌊 Sine Wave + Live Stats | `ferray-core`, `ferray-ufunc`, `ferray-stats` | Adjustable wave with live stat badges |

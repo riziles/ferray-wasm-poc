@@ -17,6 +17,6 @@
       ferray v0.5.0
     </a>
     <span class="badge preset-filled-tertiary">Rust → WASM</span>
-    <span class="badge preset-filled-success">880 KB binary</span>
+    <span class="badge preset-filled-success">900 KB binary</span>
   </div>
 </div>

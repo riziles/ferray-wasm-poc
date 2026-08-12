@@ -22,6 +22,7 @@ export interface WasmApi {
   kan_eval_grid: WasmModule['kan_eval_grid'];
   kan_edge_spline: WasmModule['kan_edge_spline'];
   kan_stats: WasmModule['kan_stats'];
+  wh_render: WasmModule['wh_render'];
   linspace: WasmModule['linspace'];
   radial_2d: WasmModule['radial_2d'];
   sine_wave: WasmModule['sine_wave'];
@@ -58,6 +59,7 @@ function createApi(mod: WasmModule): WasmApi {
     kan_eval_grid: mod.kan_eval_grid,
     kan_edge_spline: mod.kan_edge_spline,
     kan_stats: mod.kan_stats,
+    wh_render: mod.wh_render,
     linspace: mod.linspace,
     radial_2d: mod.radial_2d,
     sine_wave: mod.sine_wave,
