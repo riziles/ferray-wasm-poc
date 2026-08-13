@@ -92,7 +92,12 @@ recs.sort_by(|a, b| b.depth.cmp(a.depth));            // far → near`;
       throat circle in the flat picture exactly when it does so in 3D. A second,
       radially <em>reversed</em> chart is drawn beneath it — top sheet on the inner rim,
       bottom sheet on the outer rim — the same unrolling read from the other universe's
-      point of view. The arc lengths have
+      point of view. The <strong>overlap</strong> slider controls the atlas: at 0% each
+      chart's patch covers only its own universe (the two annuli are complementary
+      half-manifolds and the traveler appears in exactly one), and as it grows each patch
+      reaches further through the throat, so in a collar of width <code class="code-block">overlap × s(1)</code>
+      around the throat the traveler is visible in both charts. At 100% every chart covers
+      the whole manifold. The arc lengths have
       tidy closed forms:
     </p>
     <pre class="code-block p-4 overflow-x-auto text-xs"><code>Ellis:  s(r) = √(r² − b₀²)

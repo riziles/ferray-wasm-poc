@@ -9,6 +9,7 @@
   let throat = $state(0.3);     // throat/sheet radius ratio q
   let stretch = $state(1.4);    // vertical tube stretch
   let weld = $state(1.0);       // 0 separate sheets … 1 welded throat
+  let overlap = $state(1.0);    // chart atlas overlap 0..1
 
   // ── view / style ──
   let colorMode = $state(0);    // 0 classic, 1 spectrum
@@ -107,7 +108,7 @@
     const t0 = performance.now();
     const list = wasm.wh_render(
       CW, CH, yaw, pitch, zoom,
-      profile, throat, stretch, weld,
+      profile, throat, stretch, weld, overlap,
       colorMode, viewMode, rings, segs,
       traveler ? tSec : -1,
     );
@@ -171,6 +172,10 @@
       <input type="range" class="input" min="0" max="1" step="0.01" bind:value={weld} />
     </label>
     <label class="label w-40">
+      <span>Chart overlap: {(overlap * 100).toFixed(0)}%</span>
+      <input type="range" class="input" min="0" max="1" step="0.01" bind:value={overlap} />
+    </label>
+    <label class="label w-40">
       <span>Zoom: {zoom.toFixed(2)}×</span>
       <input type="range" class="input" min="0.5" max="2.2" step="0.05" bind:value={zoom} />
     </label>
@@ -213,6 +218,9 @@
       (inner rim = bottom universe, middle circle = throat, outer rim = top universe).
       The second chart is the radially <em>reversed</em> map — top sheet on the inner rim,
       bottom sheet on the outer rim — so you can read the throat crossing from either side.
+      The <strong>chart overlap</strong> slider is the atlas transition: at 0% each flat chart
+      covers only its own universe (the traveler shows in exactly one), and as it grows the
+      patches share a collar around the throat where the traveler appears in both.
     </p>
     <canvas
       bind:this={canvas}

@@ -68,6 +68,39 @@ fn acosh(x: f64) -> f64 {
     (x + (x * x - 1.0).sqrt().max(0.0)).ln()
 }
 
+/// Inverse of [`arc_len`]: radius r at meridian distance s ≥ 0 from the throat.
+/// Ellis has a closed form (s² = r² − q²); Flamm is monotone, so bisect.
+fn arc_inv(profile: u32, q: f64, s: f64) -> f64 {
+    let s = s.max(0.0);
+    match profile {
+        0 => (s * s + q * q).sqrt(),
+        _ => {
+            let mut lo = q;
+            let mut hi = q + s + 1e-9;
+            while arc_len(profile, q, hi) < s {
+                hi = hi * 1.5 + 0.1;
+            }
+            for _ in 0..50 {
+                let mid = (lo + hi) / 2.0;
+                if arc_len(profile, q, mid) < s { lo = mid; } else { hi = mid; }
+            }
+            (lo + hi) / 2.0
+        }
+    }
+}
+
+/// Does a chart's coordinate patch contain the point at signed meridian
+/// distance s (positive = top sheet)? `overlap` = how far each chart reaches
+/// past the throat into the other universe, as a fraction of s1.
+fn chart_covers(reversed: bool, overlap: f64, s_signed: f64, s1: f64) -> bool {
+    let w = overlap.clamp(0.0, 1.0) * s1;
+    if reversed {
+        s_signed >= -s1 - 1e-9 && s_signed <= w + 1e-9
+    } else {
+        s_signed >= -w - 1e-9 && s_signed <= s1 + 1e-9
+    }
+}
+
 // ── mesh ──────────────────────────────────────────────────────────────────
 
 #[derive(Clone, Copy)]
@@ -100,6 +133,7 @@ pub struct ShapeCfg {
     pub q: f64,       // throat / sheet radius ratio
     pub stretch: f64, // vertical stretch of the tube
     pub weld: f64,    // 0 = two separate holed sheets … 1 = welded throat
+    pub overlap: f64, // chart atlas: how far each flat chart reaches past the throat (0..1)
     pub rings_half: u32,
     pub segs: u32,
 }
@@ -224,8 +258,11 @@ fn chart_rho(c: &ShapeCfg, g: &ChartGeo, r: f64, top: bool) -> f64 {
 fn build_chart(c: &ShapeCfg, reversed: bool) -> (Vec<Quad>, Vec<Seg>) {
     let (r_cut, gap) = weld_geometry(c);
     let g = chart_geo(c);
+    let s_cut = arc_len(c.profile, c.q, r_cut);
     let z_top = profile_z(c.profile, c.q, 1.0) * c.stretch;
     let extent = (z_top + gap).max(1e-6);
+    // how far this chart's patch reaches into the other universe
+    let w = c.overlap.clamp(0.0, 1.0) * g.s1;
 
     let mut quads = Vec::new();
     let mut segs = Vec::new();
@@ -235,14 +272,33 @@ fn build_chart(c: &ShapeCfg, reversed: bool) -> (Vec<Quad>, Vec<Seg>) {
     for half in 0..2u32 {
         let top = half == 0;
         let sgn = if top { 1.0 } else { -1.0 };
-        let rs = ring_radii(c, r_cut);
+        // each chart owns its own universe fully and the other only
+        // within the overlap collar
+        let e_half = if top != reversed { g.s1 } else { w };
+        if e_half <= s_cut + 1e-6 {
+            continue; // patch doesn't reach this half at all
+        }
 
-        let rings: Vec<Vec<[f64; 3]>> = rs
+        // meridian distances, clustered toward the throat
+        let ss: Vec<f64> = (0..=n)
+            .map(|i| {
+                let t = i as f64 / n as f64;
+                s_cut + (e_half - s_cut) * t.powf(1.4)
+            })
+            .collect();
+        let rs: Vec<f64> = ss.iter().map(|&s| arc_inv(c.profile, c.q, s)).collect();
+
+        let rings: Vec<Vec<[f64; 3]>> = ss
             .iter()
-            .map(|&r| {
+            .map(|&s| {
                 // reversed chart: top sheet hugs the inner rim,
                 // bottom sheet forms the outer rim
-                let rho = chart_rho(c, &g, r, top != reversed);
+                let outward = top != reversed;
+                let rho = if outward {
+                    g.rho_th + g.gap_c + s
+                } else {
+                    g.rho_th - g.gap_c - s
+                } / g.r_out;
                 (0..m)
                     .map(|j| {
                         let th = TAU * j as f64 / m as f64;
@@ -265,7 +321,10 @@ fn build_chart(c: &ShapeCfg, reversed: bool) -> (Vec<Quad>, Vec<Seg>) {
             }
         }
 
-        // outlines: outer/inner rims solid dark; inner edges glow while cut
+        // outlines: physical hole edge glows while unwelded; the far edge is
+        // a dark rim when it's the true sheet edge, a pale line when it's
+        // just the chart patch boundary
+        let at_true_rim = (e_half - g.s1).abs() < 1e-6;
         for j in 0..m {
             let j2 = (j + 1) % m;
             if c.weld < 0.999 {
@@ -280,8 +339,8 @@ fn build_chart(c: &ShapeCfg, reversed: bool) -> (Vec<Quad>, Vec<Seg>) {
             segs.push(Seg {
                 a: rings[n][j],
                 b: rings[n][j2],
-                col: [0.30, 0.36, 0.46],
-                wpx: 1.2,
+                col: if at_true_rim { [0.30, 0.36, 0.46] } else { [0.62, 0.68, 0.80] },
+                wpx: if at_true_rim { 1.2 } else { 1.0 },
                 bias: -0.02,
             });
         }
@@ -523,12 +582,21 @@ pub fn render(
             (s_full * 0.60, cx)
         };
         let d = 1.18; // chart outer radius is 1, so this leaves a gap
+        let g2 = chart_geo(c);
         for reversed in [false, true] {
             let (quads, segs) = build_chart(c, reversed);
             let offy = if reversed { -d } else { d };
-            let dots = traveler_dots(&path, |r, th, wz| {
-                let g = chart_geo(c);
-                let rho = chart_rho(c, &g, r, (wz >= 0.0) != reversed);
+            // traveler is visible in a chart exactly when the patch covers it
+            let covered: Vec<(f64, f64, f64)> = path
+                .iter()
+                .copied()
+                .filter(|&(r, _th, wz)| {
+                    let s = arc_len(c.profile, c.q, r) * if wz >= 0.0 { 1.0 } else { -1.0 };
+                    chart_covers(reversed, c.overlap, s, g2.s1)
+                })
+                .collect();
+            let dots = traveler_dots(&covered, |r, th, wz| {
+                let rho = chart_rho(c, &g2, r, (wz >= 0.0) != reversed);
                 [rho * th.cos(), rho * th.sin(), 0.0]
             });
             emit(&mut recs, &quads, &segs, &dots, false, &t, light, ccx, cyc, s_ch, color_mode, 0.0, offy);
@@ -570,7 +638,7 @@ mod tests {
     use super::*;
 
     fn cfg(weld: f64) -> ShapeCfg {
-        ShapeCfg { profile: 0, q: 0.3, stretch: 1.4, weld, rings_half: 8, segs: 24 }
+        ShapeCfg { profile: 0, q: 0.3, stretch: 1.4, weld, overlap: 1.0, rings_half: 8, segs: 24 }
     }
 
     #[test]
@@ -728,5 +796,56 @@ mod tests {
             let rho = chart_rho(&c, &g, r, wz >= 0.0);
             assert!((g.rho_in / g.r_out..=1.0).contains(&rho), "traveler inside annulus");
         }
+    }
+
+    #[test]
+    fn arc_inv_roundtrip() {
+        for prof in [0u32, 1] {
+            for q in [0.15, 0.3, 0.45] {
+                for r in [q, q + 0.05, 0.6, 1.0] {
+                    let s = arc_len(prof, q, r);
+                    let r2 = arc_inv(prof, q, s);
+                    assert!((r2 - r).abs() < 1e-6, "prof={} q={} r={}", prof, q, r);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn chart_coverage_window() {
+        let s1 = 1.0;
+        // 0%: exactly one chart covers any off-throat point
+        assert!(chart_covers(false, 0.0, 0.4, s1) && !chart_covers(true, 0.0, 0.4, s1));
+        assert!(!chart_covers(false, 0.0, -0.4, s1) && chart_covers(true, 0.0, -0.4, s1));
+        // 100%: both charts cover the whole manifold
+        for s in [-1.0, -0.3, 0.0, 0.7, 1.0] {
+            assert!(chart_covers(false, 1.0, s, s1) && chart_covers(true, 1.0, s, s1));
+        }
+        // 50%: shared collar |s| <= 0.5
+        assert!(chart_covers(false, 0.5, -0.4, s1) && chart_covers(true, 0.5, -0.4, s1));
+        assert!(!chart_covers(false, 0.5, -0.6, s1) && chart_covers(true, 0.5, -0.6, s1));
+    }
+
+    fn count_quads(dl: &[f64]) -> usize {
+        let mut i = 0;
+        let mut nq = 0;
+        while i < dl.len() {
+            let tag = dl[i] as u32;
+            let step = match tag { 0 => 13, 1 => 10, _ => 8 };
+            if tag == 0 { nq += 1; }
+            i += step;
+        }
+        nq
+    }
+
+    #[test]
+    fn overlap_zero_halves_chart_coverage() {
+        let mut c = cfg(1.0);
+        let full = count_quads(&render(800, 600, 0.7, 0.5, 1.0, &c, 0, 1, -1.0));
+        c.overlap = 0.0;
+        let half = count_quads(&render(800, 600, 0.7, 0.5, 1.0, &c, 0, 1, -1.0));
+        assert!(half < full, "0% overlap draws fewer chart quads ({} vs {})", half, full);
+        assert!((half as f64) > 0.4 * full as f64 && (half as f64) < 0.6 * full as f64,
+            "two complementary half-manifolds ≈ half the quads: {} vs {}", half, full);
     }
 }

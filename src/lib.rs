@@ -1073,6 +1073,7 @@ pub fn kan_stats() -> Result<String, JsValue> {
 /// * `throat_ratio`: throat radius / sheet radius (0.05–0.6)
 /// * `tube_stretch`: vertical stretch of the throat
 /// * `weld`: 0 = two separate holed sheets … 1 = welded throat
+/// * `overlap`: flat-chart atlas overlap (0 = disjoint patches … 1 = each chart covers everything)
 /// * `color_mode`: 0 = classic (green/red sheets), 1 = spectrum
 /// * `view_mode`: 0 = 3D embedding, 1 = flat annulus chart, 2 = both side by side
 /// * `traveler_t`: animation time of the throat-crossing particle; < 0 = off
@@ -1089,6 +1090,7 @@ pub fn wh_render(
     throat_ratio: f64,
     tube_stretch: f64,
     weld: f64,
+    overlap: f64,
     color_mode: u32,
     view_mode: u32,
     rings_half: u32,
@@ -1106,6 +1108,7 @@ pub fn wh_render(
             q: throat_ratio.clamp(0.05, 0.6),
             stretch: tube_stretch.clamp(0.3, 3.0),
             weld: weld.clamp(0.0, 1.0),
+            overlap: overlap.clamp(0.0, 1.0),
             rings_half,
             segs,
         },
