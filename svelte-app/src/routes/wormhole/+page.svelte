@@ -89,7 +89,10 @@ recs.sort_by(|a, b| b.depth.cmp(a.depth));            // far → near`;
       stretching, so the entire manifold becomes one annulus — inner rim = the bottom sheet's
       edge, the middle circle = the throat, outer rim = the top sheet's edge. Colors and the
       traveler are carried through the same map, so you can watch the particle cross the
-      throat circle in the flat picture exactly when it does so in 3D. The arc lengths have
+      throat circle in the flat picture exactly when it does so in 3D. A second,
+      radially <em>reversed</em> chart is drawn beneath it — top sheet on the inner rim,
+      bottom sheet on the outer rim — the same unrolling read from the other universe's
+      point of view. The arc lengths have
       tidy closed forms:
     </p>
     <pre class="code-block p-4 overflow-x-auto text-xs"><code>Ellis:  s(r) = √(r² − b₀²)

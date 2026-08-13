@@ -154,7 +154,7 @@
       <span>View</span>
       <select class="input" bind:value={viewMode}>
         <option value={0}>3D embedding</option>
-        <option value={1}>flat annulus chart</option>
+        <option value={1}>flat annulus charts</option>
         <option value={2}>both side by side</option>
       </select>
     </label>
@@ -208,9 +208,11 @@
       Drag to orbit · scroll to zoom. The <strong>weld</strong> slider replays the textbook
       construction: two flat sheets with holes cut out → rims identified → one continuous
       manifold. The <strong>traveler</strong> rides the surface straight through the throat —
-      and the <strong>flat annulus chart</strong> shows the same surface unrolled isometrically:
+      and the <strong>flat annulus charts</strong> show the same surface unrolled isometrically:
       θ preserved, height replaced by arc length, so the whole manifold becomes one ring
       (inner rim = bottom universe, middle circle = throat, outer rim = top universe).
+      The second chart is the radially <em>reversed</em> map — top sheet on the inner rim,
+      bottom sheet on the outer rim — so you can read the throat crossing from either side.
     </p>
     <canvas
       bind:this={canvas}

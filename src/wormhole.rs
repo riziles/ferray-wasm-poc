@@ -221,7 +221,7 @@ fn chart_rho(c: &ShapeCfg, g: &ChartGeo, r: f64, top: bool) -> f64 {
     rho / g.r_out
 }
 
-fn build_chart(c: &ShapeCfg) -> (Vec<Quad>, Vec<Seg>) {
+fn build_chart(c: &ShapeCfg, reversed: bool) -> (Vec<Quad>, Vec<Seg>) {
     let (r_cut, gap) = weld_geometry(c);
     let g = chart_geo(c);
     let z_top = profile_z(c.profile, c.q, 1.0) * c.stretch;
@@ -240,7 +240,9 @@ fn build_chart(c: &ShapeCfg) -> (Vec<Quad>, Vec<Seg>) {
         let rings: Vec<Vec<[f64; 3]>> = rs
             .iter()
             .map(|&r| {
-                let rho = chart_rho(c, &g, r, top);
+                // reversed chart: top sheet hugs the inner rim,
+                // bottom sheet forms the outer rim
+                let rho = chart_rho(c, &g, r, top != reversed);
                 (0..m)
                     .map(|j| {
                         let th = TAU * j as f64 / m as f64;
@@ -360,11 +362,15 @@ fn emit(
     cyc: f64,
     s: f64,
     color_mode: u32,
+    offx: f64,
+    offy: f64,
 ) {
     let view = |p: &[f64; 3]| -> [f64; 3] {
         let x1 = p[0] * t.cyaw - p[1] * t.syaw;
         let y1 = p[0] * t.syaw + p[1] * t.cyaw;
-        [x1, y1 * t.sp + p[2] * t.cp, p[2] * t.sp - y1 * t.cp]
+        let v = [x1, y1 * t.sp + p[2] * t.cp, p[2] * t.sp - y1 * t.cp];
+        // view-space offset: stays "below/above" on screen at any yaw/pitch
+        [v[0] + offx, v[1] + offy, v[2]]
     };
     let (f, cam_d) = (3.0f64, 3.6f64);
     let proj = |v: &[f64; 3]| -> (f64, f64, f64) {
@@ -462,8 +468,8 @@ fn traveler_dots(path: &[(f64, f64, f64)], map: impl Fn(f64, f64, f64) -> [f64; 
 
 /// Render one frame.
 ///
-/// `view_mode`: 0 = 3D embedding only, 1 = flat annulus chart only,
-/// 2 = both side by side.
+/// `view_mode`: 0 = 3D embedding only, 1 = flat annulus charts only
+/// (normal mapping + radially reversed, stacked), 2 = 3D + charts side by side.
 ///
 /// Returns a flat draw list of tagged records, sorted far→near (painter's
 /// algorithm), for the JS side to replay:
@@ -505,18 +511,28 @@ pub fn render(
         let (quads, segs) = build_mesh(c);
         let dots = traveler_dots(&path, |r, th, wz| [r * th.cos(), r * th.sin(), wz]);
         let (s, ccx) = if view_mode == 2 { (s_full * 0.52, w as f64 * 0.27) } else { (s_full, cx) };
-        emit(&mut recs, &quads, &segs, &dots, true, &t, light, ccx, cyc, s, color_mode);
+        emit(&mut recs, &quads, &segs, &dots, true, &t, light, ccx, cyc, s, color_mode, 0.0, 0.0);
     }
 
     if view_mode == 1 || view_mode == 2 {
-        let (quads, segs) = build_chart(c);
-        let dots = traveler_dots(&path, |r, th, wz| {
-            let g = chart_geo(c);
-            let rho = chart_rho(c, &g, r, wz >= 0.0);
-            [rho * th.cos(), rho * th.sin(), 0.0]
-        });
-        let (s, ccx) = if view_mode == 2 { (s_full * 0.52, w as f64 * 0.73) } else { (s_full, cx) };
-        emit(&mut recs, &quads, &segs, &dots, false, &t, light, ccx, cyc, s, color_mode);
+        // two flat charts stacked vertically: normal mapping on top,
+        // radially reversed (bottom sheet = outer rim) below it
+        let (s_ch, ccx) = if view_mode == 2 {
+            (s_full * 0.50, w as f64 * 0.73)
+        } else {
+            (s_full * 0.60, cx)
+        };
+        let d = 1.18; // chart outer radius is 1, so this leaves a gap
+        for reversed in [false, true] {
+            let (quads, segs) = build_chart(c, reversed);
+            let offy = if reversed { -d } else { d };
+            let dots = traveler_dots(&path, |r, th, wz| {
+                let g = chart_geo(c);
+                let rho = chart_rho(c, &g, r, (wz >= 0.0) != reversed);
+                [rho * th.cos(), rho * th.sin(), 0.0]
+            });
+            emit(&mut recs, &quads, &segs, &dots, false, &t, light, ccx, cyc, s_ch, color_mode, 0.0, offy);
+        }
     }
 
     // painter's algorithm: far first
