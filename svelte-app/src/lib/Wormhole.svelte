@@ -12,6 +12,7 @@
 
   // ── view / style ──
   let colorMode = $state(0);    // 0 classic, 1 spectrum
+  let viewMode = $state(2);     // 0 3D, 1 flat chart, 2 both
   let wireframe = $state(false);
   let traveler = $state(true);
   let autoRotate = $state(true);
@@ -107,7 +108,7 @@
     const list = wasm.wh_render(
       CW, CH, yaw, pitch, zoom,
       profile, throat, stretch, weld,
-      colorMode, rings, segs,
+      colorMode, viewMode, rings, segs,
       traveler ? tSec : -1,
     );
     ms = performance.now() - t0;
@@ -147,6 +148,14 @@
       <select class="input" bind:value={profile}>
         <option value={0}>Ellis catenoid (traversable)</option>
         <option value={1}>Flamm paraboloid (Schwarzschild)</option>
+      </select>
+    </label>
+    <label class="label w-48">
+      <span>View</span>
+      <select class="input" bind:value={viewMode}>
+        <option value={0}>3D embedding</option>
+        <option value={1}>flat annulus chart</option>
+        <option value={2}>both side by side</option>
       </select>
     </label>
     <label class="label w-40">
@@ -198,7 +207,10 @@
     <p class="text-sm text-surface-300 font-medium">
       Drag to orbit · scroll to zoom. The <strong>weld</strong> slider replays the textbook
       construction: two flat sheets with holes cut out → rims identified → one continuous
-      manifold. The <strong>traveler</strong> rides the surface straight through the throat.
+      manifold. The <strong>traveler</strong> rides the surface straight through the throat —
+      and the <strong>flat annulus chart</strong> shows the same surface unrolled isometrically:
+      θ preserved, height replaced by arc length, so the whole manifold becomes one ring
+      (inner rim = bottom universe, middle circle = throat, outer rim = top universe).
     </p>
     <canvas
       bind:this={canvas}

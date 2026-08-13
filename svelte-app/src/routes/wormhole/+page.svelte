@@ -81,6 +81,20 @@ recs.sort_by(|a, b| b.depth.cmp(a.depth));            // far → near`;
       them into one continuous manifold.
     </p>
 
+    <h3 class="h3 mt-4">The flat annulus chart</h3>
+    <p class="text-surface-300">
+      The <strong>flat annulus chart</strong> view unrolls the same surface onto a plane:
+      keep the angle θ, and replace height with the <em>arc length</em> s(r) measured along
+      the meridian from the throat. Every meridian straightens into a radial line without
+      stretching, so the entire manifold becomes one annulus — inner rim = the bottom sheet's
+      edge, the middle circle = the throat, outer rim = the top sheet's edge. Colors and the
+      traveler are carried through the same map, so you can watch the particle cross the
+      throat circle in the flat picture exactly when it does so in 3D. The arc lengths have
+      tidy closed forms:
+    </p>
+    <pre class="code-block p-4 overflow-x-auto text-xs"><code>Ellis:  s(r) = √(r² − b₀²)
+Flamm:  s(r) = √(r·(r − rₛ)) + rₛ·ln((√r + √(r − rₛ)) / √rₛ)</code></pre>
+
     <h3 class="h3 mt-4">What it is <em>not</em></h3>
     <p class="text-surface-300">
       The funnel is <strong>not</strong> what a wormhole "looks like" — nothing sits "below" the

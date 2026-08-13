@@ -1074,6 +1074,7 @@ pub fn kan_stats() -> Result<String, JsValue> {
 /// * `tube_stretch`: vertical stretch of the throat
 /// * `weld`: 0 = two separate holed sheets … 1 = welded throat
 /// * `color_mode`: 0 = classic (green/red sheets), 1 = spectrum
+/// * `view_mode`: 0 = 3D embedding, 1 = flat annulus chart, 2 = both side by side
 /// * `traveler_t`: animation time of the throat-crossing particle; < 0 = off
 ///
 /// Returns a tagged, depth-sorted draw list (quads/lines/dots) for canvas 2D.
@@ -1089,6 +1090,7 @@ pub fn wh_render(
     tube_stretch: f64,
     weld: f64,
     color_mode: u32,
+    view_mode: u32,
     rings_half: u32,
     segs: u32,
     traveler_t: f64,
@@ -1108,6 +1110,7 @@ pub fn wh_render(
             segs,
         },
         color_mode,
+        view_mode,
         traveler_t,
     )
 }
