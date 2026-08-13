@@ -9,6 +9,13 @@
 //!
 //!   mesh → yaw/pitch → perspective → painter sort → shaded draw list
 //!
+//! A second view mode maps the same surface *isometrically* onto a flat
+//! annulus ("collar chart"): θ is preserved and height is replaced by arc
+//! length s(r) along the meridian, so the whole manifold unrolls into one
+//! ring — inner rim = bottom sheet edge, middle circle = throat, outer rim =
+//! top sheet edge. Colors and the traveler are mapped through the same
+//! transform.
+//!
 //! The Svelte side only replays the returned draw list on a canvas 2D
 //! context, so all of the math lives in Rust. Pure scalar code — no ferray
 //! crates needed.
@@ -40,8 +47,58 @@ fn profile_r(profile: u32, q: f64, z: f64) -> f64 {
     }
 }
 
+/// Arc length along the meridian from the throat (r = q) out to radius r.
+/// Closed forms of ∫ √(1 + (dẑ/dr)²) dr:
+///
+/// * Ellis:  s(r) = √(r² − q²)
+/// * Flamm:  s(r) = √(r(r−q)) + q·ln((√r + √(r−q)) / √q)
+fn arc_len(profile: u32, q: f64, r: f64) -> f64 {
+    let r = r.max(q);
+    match profile {
+        1 => {
+            let a = (r * (r - q)).sqrt();
+            let b = q * ((r.sqrt() + (r - q).sqrt()) / q.sqrt()).ln();
+            a + b
+        }
+        _ => (r * r - q * q).sqrt().max(0.0),
+    }
+}
+
 fn acosh(x: f64) -> f64 {
     (x + (x * x - 1.0).sqrt().max(0.0)).ln()
+}
+
+/// Inverse of [`arc_len`]: radius r at meridian distance s ≥ 0 from the throat.
+/// Ellis has a closed form (s² = r² − q²); Flamm is monotone, so bisect.
+fn arc_inv(profile: u32, q: f64, s: f64) -> f64 {
+    let s = s.max(0.0);
+    match profile {
+        0 => (s * s + q * q).sqrt(),
+        _ => {
+            let mut lo = q;
+            let mut hi = q + s + 1e-9;
+            while arc_len(profile, q, hi) < s {
+                hi = hi * 1.5 + 0.1;
+            }
+            for _ in 0..50 {
+                let mid = (lo + hi) / 2.0;
+                if arc_len(profile, q, mid) < s { lo = mid; } else { hi = mid; }
+            }
+            (lo + hi) / 2.0
+        }
+    }
+}
+
+/// Does a chart's coordinate patch contain the point at signed meridian
+/// distance s (positive = top sheet)? `overlap` = how far each chart reaches
+/// past the throat into the other universe, as a fraction of s1.
+fn chart_covers(reversed: bool, overlap: f64, s_signed: f64, s1: f64) -> bool {
+    let w = overlap.clamp(0.0, 1.0) * s1;
+    if reversed {
+        s_signed >= -s1 - 1e-9 && s_signed <= w + 1e-9
+    } else {
+        s_signed >= -w - 1e-9 && s_signed <= s1 + 1e-9
+    }
 }
 
 // ── mesh ──────────────────────────────────────────────────────────────────
@@ -51,8 +108,6 @@ struct Quad {
     p: [[f64; 3]; 4],
     /// normalized world height (−1..1) used for the color scheme
     u: f64,
-    /// radius of the quad's inner ring (distance from the axis)
-    r_in: f64,
 }
 
 #[derive(Clone, Copy)]
@@ -64,49 +119,23 @@ struct Seg {
     bias: f64,
 }
 
+#[derive(Clone, Copy)]
+struct Dot {
+    p: [f64; 3],
+    /// world-space radius
+    rad: f64,
+    col: [f64; 3],
+    bias: f64,
+}
+
 pub struct ShapeCfg {
     pub profile: u32,
     pub q: f64,       // throat / sheet radius ratio
     pub stretch: f64, // vertical stretch of the tube
     pub weld: f64,    // 0 = two separate holed sheets … 1 = welded throat
+    pub overlap: f64, // chart atlas: how far each flat chart reaches past the throat (0..1)
     pub rings_half: u32,
     pub segs: u32,
-    pub show_collars: bool, // tint the collar neighborhoods of the holes
-    pub charts_mode: u32,   // 0 = one chart, 1 = two charts with overlap
-    pub show_seam: bool,    // dashed ring on the glued boundary circle
-}
-
-/// Canonical traveler state shared by every illustration.
-///
-/// `theta` is the continuous embedding angle. The two-chart renderer applies
-/// its bottom-chart transition (`theta_bottom = -theta`) separately; it must
-/// not invent a second trajectory for the same traveler.
-#[derive(Clone, Copy, Debug)]
-struct TravelerState {
-    radius: f64,
-    height: f64,
-    theta: f64,
-}
-
-fn traveler_state(profile: u32, q: f64, t: f64) -> TravelerState {
-    let amp = (1.0 - q * 0.35).min(0.97);
-    let height = amp * profile_z(profile, q, 0.95) * (t * 0.8).cos();
-    let radius = profile_r(profile, q, height.abs()).min(0.985);
-    TravelerState {
-        radius,
-        height,
-        theta: t * 1.9,
-    }
-}
-
-/// Map a sheet-chart angle into the shared drawing frame.
-///
-/// The bottom chart is orientation-reversed relative to the embedding frame.
-/// Consequently its coordinate φ = −θ maps to the same physical `(x, y)` as
-/// the top/embedding angle θ.
-fn sheet_point(radius: f64, angle: f64, z: f64, bottom: bool) -> [f64; 3] {
-    let orientation = if bottom { -1.0 } else { 1.0 };
-    [radius * angle.cos(), orientation * radius * angle.sin(), z]
 }
 
 fn weld_geometry(c: &ShapeCfg) -> (f64, f64) {
@@ -116,6 +145,17 @@ fn weld_geometry(c: &ShapeCfg) -> (f64, f64) {
     // vertical separation of the two sheets while unwelded
     let gap = (1.0 - c.weld) * 0.55;
     (r_cut, gap)
+}
+
+/// ring radii, clustered toward the inner edge where curvature peaks
+fn ring_radii(c: &ShapeCfg, r_cut: f64) -> Vec<f64> {
+    let n = c.rings_half.max(2) as usize;
+    (0..=n)
+        .map(|i| {
+            let s = i as f64 / n as f64;
+            r_cut + (1.0 - r_cut) * s.powf(1.4)
+        })
+        .collect()
 }
 
 fn build_mesh(c: &ShapeCfg) -> (Vec<Quad>, Vec<Seg>) {
@@ -130,14 +170,7 @@ fn build_mesh(c: &ShapeCfg) -> (Vec<Quad>, Vec<Seg>) {
 
     for half in 0..2u32 {
         let sgn = if half == 0 { 1.0 } else { -1.0 };
-
-        // ring radii, clustered toward the inner edge where curvature peaks
-        let rs: Vec<f64> = (0..=n)
-            .map(|i| {
-                let s = i as f64 / n as f64;
-                r_cut + (1.0 - r_cut) * s.powf(1.4)
-            })
-            .collect();
+        let rs = ring_radii(c, r_cut);
 
         let rings: Vec<Vec<[f64; 3]>> = rs
             .iter()
@@ -159,7 +192,6 @@ fn build_mesh(c: &ShapeCfg) -> (Vec<Quad>, Vec<Seg>) {
                 quads.push(Quad {
                     p: [rings[i][j], rings[i][j2], rings[i + 1][j2], rings[i + 1][j]],
                     u: (zm / extent).clamp(-1.0, 1.0),
-                    r_in: rs[i],
                 });
             }
         }
@@ -181,6 +213,150 @@ fn build_mesh(c: &ShapeCfg) -> (Vec<Quad>, Vec<Seg>) {
                 b: rings[n][j2],
                 col: [0.30, 0.36, 0.46],
                 wpx: 1.2,
+                bias: -0.02,
+            });
+        }
+    }
+    (quads, segs)
+}
+
+// ── flat annulus ("collar chart") ─────────────────────────────────────────
+// θ is preserved; height is replaced by meridian arc length s(r), so every
+// meridian is unrolled isometrically onto a radial line. The full manifold
+// becomes one annulus: inner rim = bottom sheet edge, throat circle in the
+// middle, outer rim = top sheet edge. While unwelded the annulus splits into
+// two concentric rings with a gap (same story as the 3D weld morph).
+
+struct ChartGeo {
+    s1: f64,     // meridian arc length, throat → rim
+    gap_c: f64,  // radial gap while unwelded
+    rho_in: f64, // inner radius (bottom rim)
+    rho_th: f64, // throat circle
+    r_out: f64,  // outer radius (top rim)
+}
+
+fn chart_geo(c: &ShapeCfg) -> ChartGeo {
+    let s1 = arc_len(c.profile, c.q, 1.0);
+    let gap_c = (1.0 - c.weld) * 0.18 * s1;
+    let rho_in = 0.55 * s1;
+    let rho_th = rho_in + s1;
+    let r_out = rho_in + 2.0 * s1 + 2.0 * gap_c;
+    ChartGeo { s1, gap_c, rho_in, rho_th, r_out }
+}
+
+/// flat radius (normalized to the outer rim = 1) for surface radius r
+fn chart_rho(c: &ShapeCfg, g: &ChartGeo, r: f64, top: bool) -> f64 {
+    let s = arc_len(c.profile, c.q, r);
+    let rho = if top {
+        g.rho_th + g.gap_c + s
+    } else {
+        g.rho_th - g.gap_c - s
+    };
+    rho / g.r_out
+}
+
+fn build_chart(c: &ShapeCfg, reversed: bool) -> (Vec<Quad>, Vec<Seg>) {
+    let (r_cut, gap) = weld_geometry(c);
+    let g = chart_geo(c);
+    let s_cut = arc_len(c.profile, c.q, r_cut);
+    let z_top = profile_z(c.profile, c.q, 1.0) * c.stretch;
+    let extent = (z_top + gap).max(1e-6);
+    // how far this chart's patch reaches into the other universe
+    let w = c.overlap.clamp(0.0, 1.0) * g.s1;
+
+    let mut quads = Vec::new();
+    let mut segs = Vec::new();
+    let n = c.rings_half.max(2) as usize;
+    let m = c.segs.max(3) as usize;
+
+    for half in 0..2u32 {
+        let top = half == 0;
+        let sgn = if top { 1.0 } else { -1.0 };
+        // each chart owns its own universe fully and the other only
+        // within the overlap collar
+        let e_half = if top != reversed { g.s1 } else { w };
+        if e_half <= s_cut + 1e-6 {
+            continue; // patch doesn't reach this half at all
+        }
+
+        // meridian distances, clustered toward the throat
+        let ss: Vec<f64> = (0..=n)
+            .map(|i| {
+                let t = i as f64 / n as f64;
+                s_cut + (e_half - s_cut) * t.powf(1.4)
+            })
+            .collect();
+        let rs: Vec<f64> = ss.iter().map(|&s| arc_inv(c.profile, c.q, s)).collect();
+
+        let rings: Vec<Vec<[f64; 3]>> = ss
+            .iter()
+            .map(|&s| {
+                // reversed chart: top sheet hugs the inner rim,
+                // bottom sheet forms the outer rim
+                let outward = top != reversed;
+                let rho = if outward {
+                    g.rho_th + g.gap_c + s
+                } else {
+                    g.rho_th - g.gap_c - s
+                } / g.r_out;
+                (0..m)
+                    .map(|j| {
+                        let th = TAU * j as f64 / m as f64;
+                        [rho * th.cos(), rho * th.sin(), 0.0]
+                    })
+                    .collect()
+            })
+            .collect();
+
+        for i in 0..n {
+            for j in 0..m {
+                let j2 = (j + 1) % m;
+                let rm = (rs[i] + rs[i + 1]) / 2.0;
+                let u = (sgn * (profile_z(c.profile, c.q, rm) * c.stretch + gap) / extent)
+                    .clamp(-1.0, 1.0);
+                quads.push(Quad {
+                    p: [rings[i][j], rings[i][j2], rings[i + 1][j2], rings[i + 1][j]],
+                    u,
+                });
+            }
+        }
+
+        // outlines: physical hole edge glows while unwelded; the far edge is
+        // a dark rim when it's the true sheet edge, a pale line when it's
+        // just the chart patch boundary
+        let at_true_rim = (e_half - g.s1).abs() < 1e-6;
+        for j in 0..m {
+            let j2 = (j + 1) % m;
+            if c.weld < 0.999 {
+                segs.push(Seg {
+                    a: rings[0][j],
+                    b: rings[0][j2],
+                    col: [1.0, 0.86, 0.35],
+                    wpx: 2.5,
+                    bias: -0.02,
+                });
+            }
+            segs.push(Seg {
+                a: rings[n][j],
+                b: rings[n][j2],
+                col: if at_true_rim { [0.30, 0.36, 0.46] } else { [0.62, 0.68, 0.80] },
+                wpx: if at_true_rim { 1.2 } else { 1.0 },
+                bias: -0.02,
+            });
+        }
+    }
+
+    // throat circle: dashed pale ring when welded
+    if c.weld > 0.999 {
+        let rho = g.rho_th / g.r_out;
+        for j in (0..m).step_by(2) {
+            let t0 = TAU * j as f64 / m as f64;
+            let t1 = TAU * (j + 1) as f64 / m as f64;
+            segs.push(Seg {
+                a: [rho * t0.cos(), rho * t0.sin(), 0.0],
+                b: [rho * t1.cos(), rho * t1.sin(), 0.0],
+                col: [0.92, 0.95, 1.0],
+                wpx: 1.4,
                 bias: -0.02,
             });
         }
@@ -223,107 +399,46 @@ fn spectrum(u: f64) -> [f64; 3] {
     ]
 }
 
-// ── collar neighborhoods & chart colors ───────────────────────────────────
-// The connected-sum construction glues the two *collars*: the innermost
-// annulus [r_cut, r_cut + COLLAR_FRAC·(1 − r_cut)] just inside each boundary
-// circle. The didactic toggles below let you see those cuffs, the identified
-// circle itself (the seam), and the same finished space as two charts whose
-// patches overlap exactly on the glued collar band.
-
-const COLLAR_FRAC: f64 = 0.10;
-
-fn collar_radius(r_cut: f64) -> f64 {
-    r_cut + COLLAR_FRAC * (1.0 - r_cut)
-}
-
-/// 1 at the boundary circle, fading to 0 at the collar's outer edge.
-fn collar_fade(r: f64, r_cut: f64) -> f64 {
-    ((collar_radius(r_cut) - r) / (COLLAR_FRAC * (1.0 - r_cut)).max(1e-9)).clamp(0.0, 1.0)
-}
-
-/// Chart U₁ / U₂ tints for the "two charts" view: the welded surface is one
-/// space; U₁ covers the upper half, U₂ the lower half, and the two charts
-/// overlap exactly on the glued collar band (checkerboarded there).
-const CHART_TOP: [f64; 3] = [0.35, 0.85, 0.95];
-const CHART_BOT: [f64; 3] = [0.95, 0.55, 0.65];
-
-/// Collar "cuff" tints — the material that actually gets glued: bright
-/// yellow above, violet below, matching the prepared rims of the classic
-/// two-chart construction figure.
-const COLLAR_TOP: [f64; 3] = [1.0, 0.88, 0.30];
-const COLLAR_BOT: [f64; 3] = [0.75, 0.62, 1.0];
-
-/// The two-hue collar scheme from the source figure (column 2): the same
-/// yellow ↔ indigo pair on both rims, radially INVERTED between the sheets
-/// (yellow-out/indigo-in on top, indigo-out/yellow-in on the bottom).
-const COLLAR_YELLOW: [f64; 3] = [1.0, 0.87, 0.35];
-const COLLAR_INDIGO: [f64; 3] = [0.51, 0.55, 0.96];
-
 // ── render ────────────────────────────────────────────────────────────────
 
-/// Render one frame.
-///
-/// Returns a flat draw list of tagged records, sorted far→near (painter's
-/// algorithm), for the JS side to replay:
-///
-/// * quad: `[0, depth, x1,y1, x2,y2, x3,y3, x4,y4, r,g,b]` (13 floats)
-/// * line: `[1, depth, x1,y1, x2,y2, r,g,b, width]`        (10 floats)
-/// * dot:  `[2, depth, x, y, radius, r,g,b]`               (8 floats)
-///
-/// `traveler_t` < 0 disables the falling-traveler particle.
-///
-/// `view` selects which illustration to draw:
-/// * 0 — panel 1: the two flat sheets, cut apart (two charts, before gluing)
-/// * 1 — panel 2: the same sheets with the collars prepared for gluing
-///   (the yellow ↔ indigo pair, radially inverted between the sheets)
-/// * 2 — panel 3: the smooth 3D embedding (one chart)
-pub fn render(
-    w: u32,
-    h: u32,
-    yaw: f64,
-    pitch: f64,
-    zoom: f64,
-    c: &ShapeCfg,
+struct Trig {
+    cyaw: f64,
+    syaw: f64,
+    cp: f64,
+    sp: f64,
+}
+
+#[allow(clippy::too_many_arguments)]
+fn emit(
+    out: &mut Vec<(f64, Vec<f64>)>,
+    quads: &[Quad],
+    segs: &[Seg],
+    dots: &[Dot],
+    shaded: bool,
+    t: &Trig,
+    light: [f64; 3],
+    cx: f64,
+    cyc: f64,
+    s: f64,
     color_mode: u32,
-    traveler_t: f64,
-    view: u32,
-) -> Vec<f64> {
-    if view <= 1 {
-        return render_planes(w, h, yaw, pitch, zoom, c, view, traveler_t);
-    }
-    let (quads, segs) = build_mesh(c);
-
-    let (cyaw, syaw) = (yaw.cos(), yaw.sin());
-    let (cp, sp) = (pitch.cos(), pitch.sin());
-    let (cam_d, f) = (3.6f64, 3.0f64);
-    let s = 0.50 * (w.min(h)) as f64 * zoom;
-    let cx = w as f64 / 2.0;
-    let cyc = h as f64 / 2.0;
-
-    // world → view: yaw about z, then tilt so `pitch` is the camera's
-    // elevation above the sheet plane (like the textbook figures),
-    // then perspective project.
+    offx: f64,
+    offy: f64,
+) {
     let view = |p: &[f64; 3]| -> [f64; 3] {
-        let x1 = p[0] * cyaw - p[1] * syaw;
-        let y1 = p[0] * syaw + p[1] * cyaw;
-        [x1, y1 * sp + p[2] * cp, p[2] * sp - y1 * cp]
+        let x1 = p[0] * t.cyaw - p[1] * t.syaw;
+        let y1 = p[0] * t.syaw + p[1] * t.cyaw;
+        let v = [x1, y1 * t.sp + p[2] * t.cp, p[2] * t.sp - y1 * t.cp];
+        // view-space offset: stays "below/above" on screen at any yaw/pitch
+        [v[0] + offx, v[1] + offy, v[2]]
     };
+    let (f, cam_d) = (3.0f64, 3.6f64);
     let proj = |v: &[f64; 3]| -> (f64, f64, f64) {
         let dv = cam_d - v[2];
         let k = f / (f + dv);
         (cx + v[0] * k * s, cyc - v[1] * k * s, dv)
     };
 
-    // light fixed in view space: from upper-left, toward the camera
-    let l = norm3([-0.40, 0.55, 0.72]);
-
-    let mut recs: Vec<(f64, Vec<f64>)> = Vec::with_capacity(quads.len() + segs.len() + 16);
-
-    let (r_cut, _) = weld_geometry(c);
-    let per_half = (c.rings_half.max(2) * c.segs.max(3)) as usize;
-    let m = c.segs.max(3) as usize;
-
-    for (idx, q) in quads.iter().enumerate() {
+    for q in quads {
         let v0 = view(&q.p[0]);
         let v1 = view(&q.p[1]);
         let v2 = view(&q.p[2]);
@@ -334,307 +449,163 @@ pub fn render(
         let (x3, y3, d3) = proj(&v3);
         let depth = (d0 + d1 + d3) / 3.0;
 
-        // two-sided Lambert shading from the view-space normal
-        let n = norm3(cross3(sub3(v1, v0), sub3(v3, v0)));
-        let shade = 0.42 + 0.58 * dot3(n, l).abs();
+        let shade = if shaded {
+            let n = norm3(cross3(sub3(v1, v0), sub3(v3, v0)));
+            0.42 + 0.58 * dot3(n, light).abs()
+        } else {
+            1.0
+        };
         let base = if color_mode == 0 { classic(q.u) } else { spectrum(q.u) };
-        let in_collar = q.r_in < collar_radius(r_cut);
+        let col = [base[0] * shade, base[1] * shade, base[2] * shade];
 
-        // optional didactic recolorings (they change surface colors only)
-        let mut col = base;
-        if c.charts_mode == 1 {
-            let within = idx % per_half;
-            let (ring, seg) = (within / m, within % m);
-            if in_collar {
-                // the overlap strip: both charts cover the glued collar band
-                col = if (ring + seg) % 2 == 0 {
-                    mix(base, CHART_TOP, 0.45)
-                } else {
-                    mix(base, CHART_BOT, 0.45)
-                };
-            } else if q.u >= 0.0 {
-                col = mix(base, CHART_TOP, 0.45); // chart U₁ covers the upper half
-            } else {
-                col = mix(base, CHART_BOT, 0.45); // chart U₂ covers the lower half
-            }
-        } else if c.show_collars && in_collar {
-            let t = collar_fade(q.r_in, r_cut);
-            let tint = if q.u >= 0.0 { COLLAR_TOP } else { COLLAR_BOT };
-            col = mix(base, tint, 0.85 * t);
-        }
-        let lit = [col[0] * shade, col[1] * shade, col[2] * shade];
-
-        recs.push((
+        out.push((
             depth,
-            vec![0.0, depth, x0, y0, x1, y1, x2, y2, x3, y3, lit[0] * 255.0, lit[1] * 255.0, lit[2] * 255.0],
+            vec![0.0, depth, x0, y0, x1, y1, x2, y2, x3, y3, col[0] * 255.0, col[1] * 255.0, col[2] * 255.0],
         ));
     }
 
-    for sg in &segs {
+    for sg in segs {
         let va = view(&sg.a);
         let vb = view(&sg.b);
         let (xa, ya, da) = proj(&va);
         let (xb, yb, db) = proj(&vb);
-        recs.push((
-            (da + db) / 2.0 + sg.bias,
-            vec![1.0, (da + db) / 2.0 + sg.bias, xa, ya, xb, yb, sg.col[0] * 255.0, sg.col[1] * 255.0, sg.col[2] * 255.0, sg.wpx],
+        let depth = (da + db) / 2.0 + sg.bias;
+        out.push((
+            depth,
+            vec![1.0, depth, xa, ya, xb, yb, sg.col[0] * 255.0, sg.col[1] * 255.0, sg.col[2] * 255.0, sg.wpx],
         ));
     }
 
-    // ── glued seam: the identified boundary circle (dashed ring) ──
-    // The throat is where the two collar neighborhoods were glued; the seam
-    // marks that identified circle S¹ so the construction stays visible in
-    // the finished manifold instead of being swept under the rug.
-    if c.show_seam && c.weld > 0.999 {
-        const DASHES: u32 = 24;
-        let dash = TAU / DASHES as f64 / 2.0;
-        for k in 0..DASHES {
-            let a0 = k as f64 * 2.0 * dash;
-            let a1 = a0 + dash;
-            let va = view(&[r_cut * a0.cos(), r_cut * a0.sin(), 0.0]);
-            let vb = view(&[r_cut * a1.cos(), r_cut * a1.sin(), 0.0]);
-            let (xa, ya, da) = proj(&va);
-            let (xb, yb, db) = proj(&vb);
-            let d = (da + db) / 2.0 - 0.0005;
-            recs.push((d, vec![1.0, d, xa, ya, xb, yb, 0.85 * 255.0, 0.97 * 255.0, 1.0 * 255.0, 2.2]));
-        }
+    for dt in dots {
+        let v = view(&dt.p);
+        let (x, y, d) = proj(&v);
+        let k = f / (f + d);
+        let depth = d + dt.bias;
+        out.push((
+            depth,
+            vec![2.0, depth, x, y, dt.rad * k * s, dt.col[0] * 255.0, dt.col[1] * 255.0, dt.col[2] * 255.0],
+        ));
     }
-
-    // ── traveler: a particle sliding along the surface through the throat ──
-    // (only makes sense once the manifold is actually welded together)
-    if traveler_t >= 0.0 && c.weld > 0.999 {
-        let (_, gap) = weld_geometry(c);
-        for k in (0..=10).rev() {
-            let tt = traveler_t - k as f64 * 0.05;
-            let state = traveler_state(c.profile, c.q, tt);
-            let sgn = if state.height >= 0.0 { 1.0 } else { -1.0 };
-            let p = [
-                state.radius * state.theta.cos(),
-                state.radius * state.theta.sin(),
-                sgn * (state.height.abs() * c.stretch + gap),
-            ];
-            let v = view(&p);
-            let (x, y, d) = proj(&v);
-            let kpersp = f / (f + d);
-            let fade = 1.0 - k as f64 / 11.0;
-            // short comet trail: fades to a warm dim orange, never to the
-            // background (which read as dark smudges on the surface)
-            let glow = mix([0.45, 0.32, 0.12], [1.0, 0.72, 0.20], fade);
-            let core = mix([0.55, 0.45, 0.25], [1.0, 0.98, 0.90], fade);
-            let rad = 0.038 * kpersp * s * (1.0 + 0.5 * (1.0 - fade));
-            recs.push((d - 0.001, vec![2.0, d - 0.001, x, y, rad, glow[0] * 255.0, glow[1] * 255.0, glow[2] * 255.0]));
-            if k == 0 {
-                recs.push((d - 0.002, vec![2.0, d - 0.002, x, y, rad * 0.5, core[0] * 255.0, core[1] * 255.0, core[2] * 255.0]));
-            }
-        }
-    }
-
-    // painter's algorithm: far first
-    recs.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
-
-    let mut out = Vec::with_capacity(recs.len() * 12);
-    for (_, rec) in recs {
-        out.extend(rec);
-    }
-    out
 }
 
-// ── panels 1 & 2: the two-chart pictures ─────────────────────────────────
-// Two flat parallel planes (annuli) with the boundary circles that get
-// glued. Panel 1 shows them plain, with neutral outlines. Panel 2 paints the
-// collar neighborhoods with the source figure's radial yellow/indigo scheme.
-// The bottom chart is drawn through the orientation-reversing frame map, so
-// its coordinate φ = −θ lands at the same physical angle as the embedding.
-// Inside the collar the traveler appears on BOTH sheets (the two charts
-// overlap there) with a dashed connector; outside it, only on its sheet.
+/// Traveler path on the surface as (radius r, angle θ, world z) samples,
+/// head first. Empty when disabled or the manifold is unwelded.
+fn traveler_path(c: &ShapeCfg, traveler_t: f64) -> Vec<(f64, f64, f64)> {
+    if traveler_t < 0.0 || c.weld <= 0.999 {
+        return vec![];
+    }
+    let (r_cut, gap) = weld_geometry(c);
+    let amp = (1.0 - r_cut * 0.35).min(0.97);
+    let mut pts = Vec::with_capacity(21);
+    for k in 0..=20 {
+        let tt = traveler_t - k as f64 * 0.035;
+        let zb = amp * profile_z(c.profile, c.q, 0.95) * (tt * 0.8).cos();
+        let sgn = if zb >= 0.0 { 1.0 } else { -1.0 };
+        let r = profile_r(c.profile, c.q, zb.abs()).min(0.985);
+        let th = tt * 1.9;
+        let wz = sgn * (zb.abs() * c.stretch + gap);
+        pts.push((r, th, wz));
+    }
+    pts
+}
 
-fn render_planes(
+fn traveler_dots(path: &[(f64, f64, f64)], map: impl Fn(f64, f64, f64) -> [f64; 3]) -> Vec<Dot> {
+    let bg = [14.0 / 255.0, 16.0 / 255.0, 32.0 / 255.0];
+    let mut dots = Vec::with_capacity(path.len() + 1);
+    for (k, &(r, th, wz)) in path.iter().enumerate() {
+        let fade = 1.0 - k as f64 / 22.0;
+        let col = if k == 0 {
+            mix(bg, [1.0, 0.98, 0.90], fade)
+        } else {
+            mix(bg, [1.0, 0.72, 0.20], fade)
+        };
+        let rad = if k == 0 { 0.020 } else { 0.038 * (1.0 + 0.5 * (1.0 - fade)) };
+        dots.push(Dot { p: map(r, th, wz), rad, col, bias: -0.001 });
+    }
+    dots
+}
+
+/// Render one frame.
+///
+/// `view_mode`: 0 = 3D embedding only, 1 = flat annulus charts only
+/// (normal mapping + radially reversed, stacked), 2 = 3D + charts side by side.
+///
+/// Returns a flat draw list of tagged records, sorted far→near (painter's
+/// algorithm), for the JS side to replay:
+///
+/// * quad: `[0, depth, x1,y1, x2,y2, x3,y3, x4,y4, r,g,b]` (13 floats)
+/// * line: `[1, depth, x1,y1, x2,y2, r,g,b, width]`        (10 floats)
+/// * dot:  `[2, depth, x, y, radius, r,g,b]`               (8 floats)
+///
+/// `traveler_t` < 0 disables the falling-traveler particle.
+pub fn render(
     w: u32,
     h: u32,
     yaw: f64,
     pitch: f64,
     zoom: f64,
     c: &ShapeCfg,
-    view: u32,
+    color_mode: u32,
+    view_mode: u32,
     traveler_t: f64,
 ) -> Vec<f64> {
-    let q = c.q.max(0.05);
-    let gap = 0.85; // fixed separation: this is an illustration, not the weld morph
-    let n = 6usize; // flat annuli need very few rings
-    let m = c.segs.max(3) as usize;
-
-    let (cyaw, syaw) = (yaw.cos(), yaw.sin());
-    let (cp, sp) = (pitch.cos(), pitch.sin());
-    let (cam_d, f) = (3.6f64, 3.0f64);
-    let s = 0.50 * (w.min(h)) as f64 * zoom * 0.9;
-    let cx = w as f64 / 2.0;
-    let cyc = h as f64 / 2.0;
-    let view3 = |p: &[f64; 3]| -> [f64; 3] {
-        let x1 = p[0] * cyaw - p[1] * syaw;
-        let y1 = p[0] * syaw + p[1] * cyaw;
-        [x1, y1 * sp + p[2] * cp, p[2] * sp - y1 * cp]
+    let t = Trig {
+        cyaw: yaw.cos(),
+        syaw: yaw.sin(),
+        cp: pitch.cos(),
+        sp: pitch.sin(),
     };
-    let proj = |v: &[f64; 3]| -> (f64, f64, f64) {
-        let dv = cam_d - v[2];
-        let k = f / (f + dv);
-        (cx + v[0] * k * s, cyc - v[1] * k * s, dv)
-    };
-    let l = norm3([-0.40, 0.55, 0.72]);
+    // light fixed in view space: from upper-left, toward the camera
+    let light = norm3([-0.40, 0.55, 0.72]);
 
     let mut recs: Vec<(f64, Vec<f64>)> = Vec::new();
 
-    // uniform ring radii from the rim q out to 1
-    let rs: Vec<f64> = (0..=n).map(|i| q + (1.0 - q) * (i as f64 / n as f64)).collect();
+    let s_full = 0.50 * (w.min(h)) as f64 * zoom;
+    let cx = w as f64 / 2.0;
+    let cyc = h as f64 / 2.0;
 
-    for half in 0..2u32 {
-        let sgn = if half == 0 { 1.0 } else { -1.0 };
-        let z0 = sgn * gap;
-        let rings: Vec<Vec<[f64; 3]>> = rs
-            .iter()
-            .map(|&r| {
-                (0..m)
-                    .map(|j| {
-                        let th = TAU * j as f64 / m as f64;
-                        sheet_point(r, th, z0, half == 1)
-                    })
-                    .collect()
-            })
-            .collect();
+    let path = traveler_path(c, traveler_t);
 
-        for i in 0..n {
-            for j in 0..m {
-                let j2 = (j + 1) % m;
-                let r_mid = 0.5 * (rs[i] + rs[i + 1]);
-                let mut col = if half == 0 { [0.55, 0.93, 0.65] } else { [0.98, 0.64, 0.64] };
-                if view == 1 && r_mid < collar_radius(q) {
-                    // the collar: the same yellow ↔ indigo pair on both rims,
-                    // radially INVERTED between the sheets (as in the source
-                    // figure): t = 1 at the glue edge, 0 at the outer edge
-                    let t = collar_fade(r_mid, q);
-                    col = if half == 0 {
-                        mix(COLLAR_YELLOW, COLLAR_INDIGO, t)
-                    } else {
-                        mix(COLLAR_INDIGO, COLLAR_YELLOW, t)
-                    };
-                }
-                let nrm = [0.0, 0.0, sgn as f64];
-                let shade = 0.55 + 0.45 * dot3(nrm, l).abs();
-                let lit = [col[0] * shade, col[1] * shade, col[2] * shade];
-
-                let pts = [rings[i][j], rings[i][j2], rings[i + 1][j2], rings[i + 1][j]];
-                let v0 = view3(&pts[0]);
-                let v1 = view3(&pts[1]);
-                let v2 = view3(&pts[2]);
-                let v3 = view3(&pts[3]);
-                let (x0, y0, d0) = proj(&v0);
-                let (x1, y1, d1) = proj(&v1);
-                let (x2, y2, _) = proj(&v2);
-                let (x3, y3, d3) = proj(&v3);
-                let depth = (d0 + d1 + d3) / 3.0;
-                recs.push((
-                    depth,
-                    vec![0.0, depth, x0, y0, x1, y1, x2, y2, x3, y3, lit[0] * 255.0, lit[1] * 255.0, lit[2] * 255.0],
-                ));
-            }
-        }
-
-        // the boundary circle (the rim that gets glued): a plain outline in
-        // panel 1; in panel 2 it carries the collar's glue-edge color
-        for j in 0..m {
-            let j2 = (j + 1) % m;
-            let col = if view == 0 {
-                [0.25, 0.29, 0.38] // neutral outline, as in the source figure
-            } else if half == 0 {
-                COLLAR_INDIGO // the top collar's glue edge
-            } else {
-                COLLAR_YELLOW // the bottom collar's glue edge
-            };
-            let va = view3(&rings[0][j]);
-            let vb = view3(&rings[0][j2]);
-            let (xa, ya, da) = proj(&va);
-            let (xb, yb, db) = proj(&vb);
-            let d = (da + db) / 2.0 - 0.02;
-            recs.push((d, vec![1.0, d, xa, ya, xb, yb, col[0] * 255.0, col[1] * 255.0, col[2] * 255.0, 2.4]));
-        }
-
-        // faint concentric rings so the sheets read as flat planes (panel 1 only)
-        if view == 0 {
-            for r in [0.6, 0.82] {
-                for j in 0..m {
-                    let j2 = (j + 1) % m;
-                    let pa = sheet_point(r, TAU * j as f64 / m as f64, z0, half == 1);
-                    let pb = sheet_point(r, TAU * j2 as f64 / m as f64, z0, half == 1);
-                    let va = view3(&pa);
-                    let vb = view3(&pb);
-                    let (xa, ya, da) = proj(&va);
-                    let (xb, yb, db) = proj(&vb);
-                    let d = (da + db) / 2.0 - 0.015;
-                    recs.push((d, vec![1.0, d, xa, ya, xb, yb, 0.25 * 255.0, 0.30 * 255.0, 0.42 * 255.0, 1.0]));
-                }
-            }
-        }
+    if view_mode == 0 || view_mode == 2 {
+        let (quads, segs) = build_mesh(c);
+        let dots = traveler_dots(&path, |r, th, wz| [r * th.cos(), r * th.sin(), wz]);
+        let (s, ccx) = if view_mode == 2 { (s_full * 0.52, w as f64 * 0.27) } else { (s_full, cx) };
+        emit(&mut recs, &quads, &segs, &dots, true, &t, light, ccx, cyc, s, color_mode, 0.0, 0.0);
     }
 
-    // ── traveler on the two-chart pictures ──
-    // The two-chart picture uses the same canonical radius and height as the
-    // embedding. Only the chart coordinate changes: the top chart reads θ,
-    // while the bottom chart reads the identified point as −θ. Presence fades
-    // between the charts across the collar, but neither chart gets a second
-    // angular or radial trajectory.
-    if traveler_t >= 0.0 {
-        let state = traveler_state(c.profile, q, traveler_t);
-        let r = state.radius;
-        let th = state.theta;
-        // presence: 0 at the collar's outer edge → 1 at the boundary circle
-        let p = ((collar_radius(q) - r) / (collar_radius(q) - q).max(1e-9)).clamp(0.0, 1.0);
-
-        let (top_ang, bot_ang, top_pres, bot_pres) = if state.height >= 0.0 {
-            (th, -th, 1.0, p)
+    if view_mode == 1 || view_mode == 2 {
+        // two flat charts stacked vertically: normal mapping on top,
+        // radially reversed (bottom sheet = outer rim) below it
+        let (s_ch, ccx) = if view_mode == 2 {
+            (s_full * 0.50, w as f64 * 0.73)
         } else {
-            (th, -th, p, 1.0)
+            (s_full * 0.60, cx)
         };
-        let dots: [([f64; 3], f64); 2] = [
-            // top sheet dot
-            (sheet_point(r, top_ang, gap, false), top_pres),
-            // bottom sheet dot, in its own mirrored chart
-            (sheet_point(r, bot_ang, -gap, true), bot_pres),
-        ];
-
-        for (pnt, pres) in &dots {
-            let v = view3(pnt);
-            let (x, y, d) = proj(&v);
-            let kpersp = f / (f + d);
-            let rad = 0.045 * kpersp * s * pres;
-            if rad > 0.05 {
-                let col = [1.0, 0.72, 0.20];
-                recs.push((d - 0.002, vec![2.0, d - 0.002, x, y, rad, col[0] * 255.0, col[1] * 255.0, col[2] * 255.0]));
-                recs.push((d - 0.003, vec![2.0, d - 0.003, x, y, rad * 0.45, 255.0, 250.0, 230.0]));
-            }
-        }
-
-        // dashed connector: the two appearances are the same traveler; it
-        // fades in/out with the overlap (brightness and width both ramp)
-        if p > 0.0 {
-            let pa = dots[0].0;
-            let pb = dots[1].0;
-            let mixc = |a: f64, b: f64| a + (b - a) * p;
-            for k in 0..10 {
-                let t0 = k as f64 / 10.0;
-                let t1 = (k as f64 + 0.45) / 10.0;
-                let lerp = |t: f64| -> [f64; 3] {
-                    [pa[0] + (pb[0] - pa[0]) * t, pa[1] + (pb[1] - pa[1]) * t, pa[2] + (pb[2] - pa[2]) * t]
-                };
-                let va = view3(&lerp(t0));
-                let vb = view3(&lerp(t1));
-                let (xa, ya, da) = proj(&va);
-                let (xb, yb, db) = proj(&vb);
-                let d = (da + db) / 2.0 - 0.01;
-                recs.push((d, vec![1.0, d, xa, ya, xb, yb, mixc(0.24, 1.0) * 255.0, mixc(0.28, 1.0) * 255.0, mixc(0.42, 1.0) * 255.0, 1.6 * p]));
-            }
+        let d = 1.18; // chart outer radius is 1, so this leaves a gap
+        let g2 = chart_geo(c);
+        for reversed in [false, true] {
+            let (quads, segs) = build_chart(c, reversed);
+            let offy = if reversed { -d } else { d };
+            // traveler is visible in a chart exactly when the patch covers it
+            let covered: Vec<(f64, f64, f64)> = path
+                .iter()
+                .copied()
+                .filter(|&(r, _th, wz)| {
+                    let s = arc_len(c.profile, c.q, r) * if wz >= 0.0 { 1.0 } else { -1.0 };
+                    chart_covers(reversed, c.overlap, s, g2.s1)
+                })
+                .collect();
+            let dots = traveler_dots(&covered, |r, th, wz| {
+                let rho = chart_rho(c, &g2, r, (wz >= 0.0) != reversed);
+                [rho * th.cos(), rho * th.sin(), 0.0]
+            });
+            emit(&mut recs, &quads, &segs, &dots, false, &t, light, ccx, cyc, s_ch, color_mode, 0.0, offy);
         }
     }
 
+    // painter's algorithm: far first
     recs.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
+
     let mut out = Vec::with_capacity(recs.len() * 12);
     for (_, rec) in recs {
         out.extend(rec);
@@ -667,17 +638,7 @@ mod tests {
     use super::*;
 
     fn cfg(weld: f64) -> ShapeCfg {
-        ShapeCfg {
-            profile: 0,
-            q: 0.3,
-            stretch: 1.4,
-            weld,
-            rings_half: 8,
-            segs: 24,
-            show_collars: false,
-            charts_mode: 0,
-            show_seam: false,
-        }
+        ShapeCfg { profile: 0, q: 0.3, stretch: 1.4, weld, overlap: 1.0, rings_half: 8, segs: 24 }
     }
 
     #[test]
@@ -694,6 +655,67 @@ mod tests {
                 // monotone in r
                 assert!(profile_z(prof, q, 1.0) > profile_z(prof, q, q + 0.1));
             }
+        }
+    }
+
+    #[test]
+    fn arc_length_matches_numeric() {
+        // integrate √(1+(dẑ/dr)²) with the substitution r = q+(1−q)u² to
+        // remove the throat singularity, and compare with the closed forms
+        for prof in [0u32, 1] {
+            for q in [0.15, 0.3, 0.45] {
+                // after the substitution r = q+(1−q)u² the integrand
+                // √(1+(dẑ/dr)²)·dr/du is nonsingular:
+                //   Ellis: 2r√(1−q)/√(r+q)   Flamm: 2√(r(1−q))
+                let f = |u: f64| {
+                    let r = q + (1.0 - q) * u * u;
+                    match prof {
+                        1 => 2.0 * (r * (1.0 - q)).sqrt(),
+                        _ => 2.0 * r * (1.0 - q).sqrt() / (r + q).sqrt(),
+                    }
+                };
+                let n = 2000usize;
+                let hstep = 1.0 / n as f64;
+                let mut sum = f(0.0) + f(1.0);
+                for i in 1..n {
+                    sum += if i % 2 == 1 { 4.0 } else { 2.0 } * f(i as f64 * hstep);
+                }
+                let num = sum * hstep / 3.0;
+                let closed = arc_len(prof, q, 1.0);
+                assert!((num - closed).abs() < 1e-6, "prof={} q={} num={} closed={}", prof, q, num, closed);
+            }
+        }
+        // and s(q) = 0
+        for prof in [0u32, 1] {
+            assert!(arc_len(prof, 0.3, 0.3) < 1e-12);
+        }
+    }
+
+    #[test]
+    fn chart_radii_monotone_and_bounded() {
+        for prof in [0u32, 1] {
+            let c = cfg(1.0);
+            let c = ShapeCfg { profile: prof, ..c };
+            let g = chart_geo(&c);
+            // top half: rho grows from throat (≈ middle) to 1 at the rim
+            let mut prev = 0.0;
+            for r in [0.3, 0.5, 0.7, 0.9, 1.0] {
+                let rho = chart_rho(&c, &g, r, true);
+                assert!(rho > prev);
+                prev = rho;
+            }
+            assert!((prev - 1.0).abs() < 1e-9, "top rim normalizes to 1");
+            // bottom half: rho shrinks from throat to rho_in/r_out at the rim
+            let mut prev = 2.0;
+            for r in [0.3, 0.5, 0.7, 0.9, 1.0] {
+                let rho = chart_rho(&c, &g, r, false);
+                assert!(rho < prev);
+                prev = rho;
+            }
+            assert!(prev > 0.0, "inner rim must stay positive");
+            // throat sits strictly between the rims
+            let rt = g.rho_th / g.r_out;
+            assert!(rt > prev && rt < 1.0);
         }
     }
 
@@ -723,9 +745,7 @@ mod tests {
         assert!((top_min - bot_max).abs() < 1e-9, "halves must meet at the throat");
     }
 
-    #[test]
-    fn drawlist_sorted_bounded_and_parseable() {
-        let dl = render(800, 600, 0.7, 0.5, 1.0, &cfg(1.0), 0, -1.0, 2);
+    fn check_drawlist(dl: &[f64]) {
         assert!(!dl.is_empty());
         let mut i = 0usize;
         let mut last = f64::INFINITY;
@@ -745,7 +765,15 @@ mod tests {
             i += n;
         }
         assert_eq!(i, dl.len(), "draw list must parse exactly");
-        assert_eq!(nquads, 2 * 8 * 24, "two halves × rings × segs");
+        assert!(nquads > 300);
+    }
+
+    #[test]
+    fn drawlist_sorted_bounded_and_parseable_all_modes() {
+        for mode in [0u32, 1, 2] {
+            let dl = render(800, 600, 0.7, 0.5, 1.0, &cfg(1.0), 0, mode, -1.0);
+            check_drawlist(&dl);
+        }
     }
 
     #[test]
@@ -759,166 +787,65 @@ mod tests {
     }
 
     #[test]
-    fn collar_band_is_annulus_near_the_hole() {
-        let r_cut = 0.3;
-        assert!(collar_radius(r_cut) > r_cut, "collar is a band, not a line");
-        assert!(collar_fade(r_cut, r_cut) > 0.999, "strongest at the rim");
-        assert!(collar_fade(1.0, r_cut) < 1e-9, "nothing at the outer edge");
-        assert!(collar_fade((r_cut + collar_radius(r_cut)) / 2.0, r_cut) > 0.4);
-    }
-
-    #[test]
-    fn didactic_modes_change_the_draw_list() {
-        let plain = render(640, 480, 0.7, 0.5, 1.0, &cfg(1.0), 0, -1.0, 2);
-        let mut c2 = cfg(1.0);
-        c2.charts_mode = 1;
-        let charts = render(640, 480, 0.7, 0.5, 1.0, &c2, 0, -1.0, 2);
-        let mut c3 = cfg(1.0);
-        c3.show_collars = true;
-        let collars = render(640, 480, 0.7, 0.5, 1.0, &c3, 0, -1.0, 2);
-        assert_ne!(plain, charts, "two-charts view must recolor the surface");
-        assert_ne!(plain, collars, "collar highlight must recolor the surface");
-    }
-
-    #[test]
-    fn seam_ring_appears_only_when_welded() {
-        let count_lines = |dl: &[f64]| {
-            let mut n = 0usize;
-            let mut i = 0usize;
-            while i < dl.len() {
-                if dl[i] == 1.0 {
-                    n += 1;
-                }
-                i += match dl[i] as u32 { 0 => 13, 1 => 10, _ => 8 };
-            }
-            n
-        };
-        let without = render(640, 480, 0.7, 0.5, 1.0, &cfg(1.0), 0, -1.0, 2);
-        let mut c = cfg(1.0);
-        c.show_seam = true;
-        let with = render(640, 480, 0.7, 0.5, 1.0, &c, 0, -1.0, 2);
-        let mut c0 = cfg(0.0);
-        c0.show_seam = true;
-        let unwelded = render(640, 480, 0.7, 0.5, 1.0, &c0, 0, -1.0, 2);
-        // two outline rings of m segs each, plus the 24 dashed seam arcs
-        assert_eq!(count_lines(&without), 2 * 24);
-        assert_eq!(count_lines(&with), 2 * 24 + 24);
-        // unwelded: glowing inner rims (2·m) + outlines (2·m), no seam dashes
-        assert_eq!(count_lines(&unwelded), 4 * 24, "no seam while the sheets are cut apart");
-    }
-
-    #[test]
-    fn collar_gradient_inverts_between_sheets() {
-        // the source figure colors the collars with the same two hues,
-        // radially inverted: t = 1 at the glue edge, 0 at the outer edge
-        let top = |t: f64| mix(COLLAR_YELLOW, COLLAR_INDIGO, t);
-        let bot = |t: f64| mix(COLLAR_INDIGO, COLLAR_YELLOW, t);
-        // top: yellow at the outer edge, indigo at the glue edge
-        assert_eq!(top(0.0), COLLAR_YELLOW);
-        assert_eq!(top(1.0), COLLAR_INDIGO);
-        // bottom: inverted
-        assert_eq!(bot(0.0), COLLAR_INDIGO);
-        assert_eq!(bot(1.0), COLLAR_YELLOW);
-        // they meet in the middle
-        assert_eq!(top(0.5), bot(0.5));
-    }
-
-    #[test]
-    fn bottom_chart_mirror_maps_to_same_drawing_position() {
-        let theta = 1.234;
-        let top = sheet_point(0.7, theta, 0.85, false);
-        let bottom = sheet_point(0.7, -theta, -0.85, true);
-        assert!((top[0] - bottom[0]).abs() < 1e-12);
-        assert!((top[1] - bottom[1]).abs() < 1e-12);
-        assert!((top[2] + bottom[2]).abs() < 1e-12);
-    }
-
-    #[test]
-    fn two_chart_traveler_is_an_exact_angle_mirror() {
-        for t in [0.0, 0.4, 1.7, 2.4, 4.0] {
-            let state = traveler_state(0, 0.3, t);
-            let top = [state.radius * state.theta.cos(), state.radius * state.theta.sin()];
-            let bottom = [state.radius * (-state.theta).cos(), state.radius * (-state.theta).sin()];
-            assert!((top[0] - bottom[0]).abs() < 1e-12, "x coordinate must be reflected");
-            assert!((top[1] + bottom[1]).abs() < 1e-12, "y coordinate must be reflected");
+    fn traveler_mapped_to_chart_annulus() {
+        let c = cfg(1.0);
+        let g = chart_geo(&c);
+        let path = traveler_path(&c, 3.7);
+        assert!(!path.is_empty());
+        for &(r, _th, wz) in &path {
+            let rho = chart_rho(&c, &g, r, wz >= 0.0);
+            assert!((g.rho_in / g.r_out..=1.0).contains(&rho), "traveler inside annulus");
         }
     }
 
     #[test]
-    fn planes_views_traveler_enters_collar() {
-        let count = |dl: &[f64], tag: f64| {
-            let mut n = 0usize;
-            let mut i = 0usize;
-            while i < dl.len() {
-                if dl[i] == tag {
-                    n += 1;
+    fn arc_inv_roundtrip() {
+        for prof in [0u32, 1] {
+            for q in [0.15, 0.3, 0.45] {
+                for r in [q, q + 0.05, 0.6, 1.0] {
+                    let s = arc_len(prof, q, r);
+                    let r2 = arc_inv(prof, q, s);
+                    assert!((r2 - r).abs() < 1e-6, "prof={} q={} r={}", prof, q, r);
                 }
-                i += match dl[i] as u32 { 0 => 13, 1 => 10, _ => 8 };
             }
-            n
-        };
-        // t=0: high above the sheets (r ≈ 0.76 > collar) — one chart sees it.
-        // t=π/1.6: at the throat (r = q ≤ collar) — both charts see it.
-        // (each dot emits two tag-2 records: glow + core)
-        let t_in = std::f64::consts::PI / 1.6;
-        for view in [0u32, 1] {
-            let out = render(480, 360, 0.7, 0.5, 1.0, &cfg(1.0), 0, 0.0, view);
-            let inn = render(480, 360, 0.7, 0.5, 1.0, &cfg(1.0), 0, t_in, view);
-            assert_eq!(count(&out, 2.0), 2, "far from the hole: one chart sees the traveler");
-            assert_eq!(count(&inn, 2.0), 4, "inside the collar: both charts see it");
-            // dashed connector only while in the collar (view 0 adds two grid
-            // rings on each sheet: 2·2·m, so 6·m lines; view 1: 2·m rims)
-            let base_lines = if view == 0 { 6 * 24 } else { 2 * 24 };
-            assert_eq!(count(&out, 1.0), base_lines, "no connector outside the collar");
-            assert_eq!(count(&inn, 1.0), base_lines + 10, "dashed connector while in the collar");
         }
-        // the plane views never include the 3D tube: exactly two flat annuli
-        let dl = render(480, 360, 0.7, 0.5, 1.0, &cfg(1.0), 0, -1.0, 1);
-        assert_eq!(count(&dl, 0.0), 2 * 6 * 24, "two flat annuli × 6 rings × 24 segs");
-        let mut last = f64::INFINITY;
-        let mut i = 0usize;
+    }
+
+    #[test]
+    fn chart_coverage_window() {
+        let s1 = 1.0;
+        // 0%: exactly one chart covers any off-throat point
+        assert!(chart_covers(false, 0.0, 0.4, s1) && !chart_covers(true, 0.0, 0.4, s1));
+        assert!(!chart_covers(false, 0.0, -0.4, s1) && chart_covers(true, 0.0, -0.4, s1));
+        // 100%: both charts cover the whole manifold
+        for s in [-1.0, -0.3, 0.0, 0.7, 1.0] {
+            assert!(chart_covers(false, 1.0, s, s1) && chart_covers(true, 1.0, s, s1));
+        }
+        // 50%: shared collar |s| <= 0.5
+        assert!(chart_covers(false, 0.5, -0.4, s1) && chart_covers(true, 0.5, -0.4, s1));
+        assert!(!chart_covers(false, 0.5, -0.6, s1) && chart_covers(true, 0.5, -0.6, s1));
+    }
+
+    fn count_quads(dl: &[f64]) -> usize {
+        let mut i = 0;
+        let mut nq = 0;
         while i < dl.len() {
-            let d = dl[i + 1];
-            assert!(d <= last + 1e-9, "painter order violated");
-            last = d;
-            i += match dl[i] as u32 { 0 => 13, 1 => 10, _ => 8 };
+            let tag = dl[i] as u32;
+            let step = match tag { 0 => 13, 1 => 10, _ => 8 };
+            if tag == 0 { nq += 1; }
+            i += step;
         }
-        assert_eq!(i, dl.len(), "plane draw list must parse exactly");
+        nq
     }
 
     #[test]
-    fn traveler_positions_continuous_across_throat_crossing() {
-        // Sample the projected traveler-dot positions a hair before and after
-        // the throat crossing (zb = 0). Each dot may move only a little over
-        // dt = 0.04 — a teleport (dots swapping sheets) would move one of them
-        // a huge distance in a single step.
-        let t_cross = std::f64::consts::PI / 1.6;
-        let dots_at = |t: f64| -> Vec<(f64, f64)> {
-            let dl = render(480, 360, 0.7, 0.5, 1.0, &cfg(1.0), 0, t, 1);
-            let mut pts = Vec::new();
-            let mut i = 0usize;
-            while i < dl.len() {
-                if dl[i] == 2.0 {
-                    pts.push((dl[i + 2], dl[i + 3]));
-                }
-                i += match dl[i] as u32 { 0 => 13, 1 => 10, _ => 8 };
-            }
-            // each dot emits a glow + core record at the same center: dedupe
-            let mut uniq: Vec<(i32, i32)> = pts.iter().map(|p| (p.0.round() as i32, p.1.round() as i32)).collect();
-            uniq.sort();
-            uniq.dedup();
-            uniq.into_iter().map(|(x, y)| (x as f64, y as f64)).collect()
-        };
-        let before = dots_at(t_cross - 0.02);
-        let after = dots_at(t_cross + 0.02);
-        assert_eq!(before.len(), 2, "both charts see the traveler just before the crossing");
-        assert_eq!(after.len(), 2, "both charts see the traveler just after the crossing");
-        for d0 in &before {
-            let nearest = after
-                .iter()
-                .map(|d1| ((d1.0 - d0.0).powi(2) + (d1.1 - d0.1).powi(2)).sqrt())
-                .fold(f64::INFINITY, f64::min);
-            assert!(nearest < 12.0, "dot moved only a little over dt=0.04 (was {nearest:.1}px): no teleport");
-        }
+    fn overlap_zero_halves_chart_coverage() {
+        let mut c = cfg(1.0);
+        let full = count_quads(&render(800, 600, 0.7, 0.5, 1.0, &c, 0, 1, -1.0));
+        c.overlap = 0.0;
+        let half = count_quads(&render(800, 600, 0.7, 0.5, 1.0, &c, 0, 1, -1.0));
+        assert!(half < full, "0% overlap draws fewer chart quads ({} vs {})", half, full);
+        assert!((half as f64) > 0.4 * full as f64 && (half as f64) < 0.6 * full as f64,
+            "two complementary half-manifolds ≈ half the quads: {} vs {}", half, full);
     }
 }

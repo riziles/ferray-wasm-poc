@@ -71,37 +71,37 @@ recs.sort_by(|a, b| b.depth.cmp(a.depth));            // far → near`;
     <pre class="code-block p-4 overflow-x-auto text-xs"><code>{ellis}
 {flamm}</code></pre>
 
-    <h3 class="h3 mt-4">Three ways to draw the same construction</h3>
+    <h3 class="h3 mt-4">The construction slider</h3>
     <p class="text-surface-300">
-      Topologically this is a <strong>connected sum</strong>: take two copies of the plane, cut a
-      disk out of each, and <em>identify</em> (glue) the two boundary circles. To make the join
-      smooth you don't glue just the circles — you glue their <strong>collar neighborhoods</strong>:
-      the thin annular "cuffs" just inside each boundary circle. The two cuffs become one region:
-      the throat (<code class="code-block">S¹ × ℝ</code>). The demo shows the construction three
-      ways, side by side — one shared camera, the same traveler:
+      Topologically, the diagram is built the way the screenshot that inspired this demo shows:
+      take two copies of the plane, cut a disk out of each, and <em>identify</em> (glue) the two
+      boundary circles. The glued circle sweeps out the throat
+      (<code class="code-block">S¹ × ℝ</code>). Drag the <strong>construction</strong> slider to
+      0% to cut the sheets apart (glowing rims = the boundary circles), then back to 100% to weld
+      them into one continuous manifold.
     </p>
-    <ul class="list-disc list-inside text-surface-300 space-y-1">
-      <li>
-        <strong>① Two sheets (two charts, before gluing)</strong> — two flat planes with disks
-        removed; the glowing rims are the boundary circles. Far from the hole the traveler is on
-        exactly one sheet — the two charts only "know" each other at the collars.
-      </li>
-      <li>
-        <strong>② Gluing the collars (identification)</strong> — the collars are prepared with the
-        same two hues, <em>yellow and indigo</em>, radially inverted between the sheets:
-        yellow-out/indigo-in on top, indigo-out/yellow-in on the bottom — the "order of the
-        colors" flips. Glue them and the pair becomes the throat's yellow → indigo gradient (③).
-        The dashed connector fades in only inside the overlap — outside the collars the two sheets
-        are separate universes, each point in exactly one chart. The bottom sheet is read in its own
-        mirrored chart (θ ↦ −θ), and that chart's drawing frame is mirrored too, so the identified
-        point lines up with the embedding's physical position.
-      </li>
-      <li>
-        <strong>③ One chart (the embedding)</strong> — the smooth 3D throat is the same space,
-        drawn by bending the sheets into a third dimension. That's a drawing luxury, not what
-        anyone on a sheet experiences; drag the <strong>weld</strong> slider to animate the gluing.
-      </li>
-    </ul>
+
+    <h3 class="h3 mt-4">The flat annulus chart</h3>
+    <p class="text-surface-300">
+      The <strong>flat annulus chart</strong> view unrolls the same surface onto a plane:
+      keep the angle θ, and replace height with the <em>arc length</em> s(r) measured along
+      the meridian from the throat. Every meridian straightens into a radial line without
+      stretching, so the entire manifold becomes one annulus — inner rim = the bottom sheet's
+      edge, the middle circle = the throat, outer rim = the top sheet's edge. Colors and the
+      traveler are carried through the same map, so you can watch the particle cross the
+      throat circle in the flat picture exactly when it does so in 3D. A second,
+      radially <em>reversed</em> chart is drawn beneath it — top sheet on the inner rim,
+      bottom sheet on the outer rim — the same unrolling read from the other universe's
+      point of view. The <strong>overlap</strong> slider controls the atlas: at 0% each
+      chart's patch covers only its own universe (the two annuli are complementary
+      half-manifolds and the traveler appears in exactly one), and as it grows each patch
+      reaches further through the throat, so in a collar of width <code class="code-block">overlap × s(1)</code>
+      around the throat the traveler is visible in both charts. At 100% every chart covers
+      the whole manifold. The arc lengths have
+      tidy closed forms:
+    </p>
+    <pre class="code-block p-4 overflow-x-auto text-xs"><code>Ellis:  s(r) = √(r² − b₀²)
+Flamm:  s(r) = √(r·(r − rₛ)) + rₛ·ln((√r + √(r − rₛ)) / √rₛ)</code></pre>
 
     <h3 class="h3 mt-4">What it is <em>not</em></h3>
     <p class="text-surface-300">

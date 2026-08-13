@@ -1073,13 +1073,10 @@ pub fn kan_stats() -> Result<String, JsValue> {
 /// * `throat_ratio`: throat radius / sheet radius (0.05–0.6)
 /// * `tube_stretch`: vertical stretch of the throat
 /// * `weld`: 0 = two separate holed sheets … 1 = welded throat
+/// * `overlap`: flat-chart atlas overlap (0 = disjoint patches … 1 = each chart covers everything)
 /// * `color_mode`: 0 = classic (green/red sheets), 1 = spectrum
+/// * `view_mode`: 0 = 3D embedding, 1 = flat annulus chart, 2 = both side by side
 /// * `traveler_t`: animation time of the throat-crossing particle; < 0 = off
-/// * `show_collars`: 1 = tint the collar neighborhoods (the cuffs that get glued)
-/// * `charts_mode`: 0 = one chart, 1 = two charts (overlap strip on the throat)
-/// * `show_seam`: 1 = dashed ring marking the glued boundary circle (weld = 1)
-/// * `view`: 0/1 = two-chart plane illustrations (panel 1 / panel 2 with the
-///   identification color map), 2 = the 3D embedding
 ///
 /// Returns a tagged, depth-sorted draw list (quads/lines/dots) for canvas 2D.
 #[wasm_bindgen]
@@ -1093,14 +1090,12 @@ pub fn wh_render(
     throat_ratio: f64,
     tube_stretch: f64,
     weld: f64,
+    overlap: f64,
     color_mode: u32,
+    view_mode: u32,
     rings_half: u32,
     segs: u32,
     traveler_t: f64,
-    show_collars: u32,
-    charts_mode: u32,
-    show_seam: u32,
-    view: u32,
 ) -> Vec<f64> {
     wormhole::render(
         width,
@@ -1113,14 +1108,12 @@ pub fn wh_render(
             q: throat_ratio.clamp(0.05, 0.6),
             stretch: tube_stretch.clamp(0.3, 3.0),
             weld: weld.clamp(0.0, 1.0),
+            overlap: overlap.clamp(0.0, 1.0),
             rings_half,
             segs,
-            show_collars: show_collars != 0,
-            charts_mode: charts_mode.clamp(0, 1),
-            show_seam: show_seam != 0,
         },
         color_mode,
+        view_mode,
         traveler_t,
-        view,
     )
 }

@@ -9,19 +9,16 @@
   let throat = $state(0.3);     // throat/sheet radius ratio q
   let stretch = $state(1.4);    // vertical tube stretch
   let weld = $state(1.0);       // 0 separate sheets … 1 welded throat
+  let overlap = $state(1.0);    // chart atlas overlap 0..1
 
   // ── view / style ──
   let colorMode = $state(0);    // 0 classic, 1 spectrum
+  let viewMode = $state(2);     // 0 3D, 1 flat chart, 2 both
   let wireframe = $state(false);
   let traveler = $state(true);
   let autoRotate = $state(true);
   let quality = $state(1);      // 0 low, 1 med, 2 high
   let zoom = $state(1.0);
-
-  // ── construction didactics (apply to the 3D embedding panel) ──
-  let showCollars = $state(false); // tint the collar neighborhoods (cuffs)
-  let chartsMode = $state(0);      // 0 one chart, 1 two charts w/ overlap
-  let showSeam = $state(true);     // dashed ring on the glued boundary circle
 
   // ── runtime (not reactive — read per-frame) ──
   let yaw = 0.65;
@@ -33,20 +30,18 @@
   let ms = $state(0);
   let nQuads = $state(0);
 
-  let c0: HTMLCanvasElement; // panel 1: two sheets, cut apart
-  let c1: HTMLCanvasElement; // panel 2: gluing the collars (identification)
-  let c2: HTMLCanvasElement; // panel 3: one chart, the embedding
+  let canvas: HTMLCanvasElement;
   let rafId = 0;
   let dragging = false;
   let lx = 0, ly = 0;
 
   const QUAL: [number, number][] = [[16, 56], [26, 80], [38, 104]];
-  const VPW = 430, VPH = 400;
+  const CW = 960, CH = 620;
 
-  function draw(list: Float64Array, canvas: HTMLCanvasElement): number {
+  function draw(list: Float64Array) {
     const ctx = canvas.getContext('2d')!;
     ctx.fillStyle = '#0b1020';
-    ctx.fillRect(0, 0, VPW, VPH);
+    ctx.fillRect(0, 0, CW, CH);
 
     let i = 0, q = 0;
     while (i < list.length) {
@@ -93,7 +88,7 @@
         i += 8;
       }
     }
-    return q;
+    nQuads = q;
   }
 
   let last = 0;
@@ -105,29 +100,27 @@
       fpsEma = fpsEma * 0.92 + (1 / Math.max(dt, 1e-4)) * 0.08;
       fps = Math.round(fpsEma);
       if (autoRotate && !dragging) yaw += dt * 0.45;
-      // a slow traveler: ½ speed so the descent reads clearly
-      if (traveler) tSec += dt * 0.5;
+      if (traveler) tSec += dt;
     }
     last = now;
 
     const [rings, segs] = QUAL[quality];
-    const t = traveler ? tSec : -1;
-    const common = [profile, throat, stretch, weld, colorMode, rings, segs, t,
-      showCollars ? 1 : 0, chartsMode, showSeam ? 1 : 0] as const;
     const t0 = performance.now();
-    const a = wasm.wh_render(VPW, VPH, yaw, pitch, zoom, ...common, 0); // two sheets, cut apart
-    const b = wasm.wh_render(VPW, VPH, yaw, pitch, zoom, ...common, 1); // gluing the collars
-    const c = wasm.wh_render(VPW, VPH, yaw, pitch, zoom, ...common, 2); // one chart, embedding
+    const list = wasm.wh_render(
+      CW, CH, yaw, pitch, zoom,
+      profile, throat, stretch, weld, overlap,
+      colorMode, viewMode, rings, segs,
+      traveler ? tSec : -1,
+    );
     ms = performance.now() - t0;
-
-    nQuads = (c0 ? draw(a, c0) : 0) + (c1 ? draw(b, c1) : 0) + (c2 ? draw(c, c2) : 0);
+    draw(list);
   }
 
-  // ── pointer interaction: drag to orbit (shared camera), wheel to zoom ──
+  // ── pointer interaction: drag to orbit, wheel to zoom ──
   function onPointerDown(e: PointerEvent) {
     dragging = true;
     lx = e.clientX; ly = e.clientY;
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    canvas.setPointerCapture(e.pointerId);
   }
   function onPointerMove(e: PointerEvent) {
     if (!dragging) return;
@@ -158,6 +151,14 @@
         <option value={1}>Flamm paraboloid (Schwarzschild)</option>
       </select>
     </label>
+    <label class="label w-48">
+      <span>View</span>
+      <select class="input" bind:value={viewMode}>
+        <option value={0}>3D embedding</option>
+        <option value={1}>flat annulus charts</option>
+        <option value={2}>both side by side</option>
+      </select>
+    </label>
     <label class="label w-40">
       <span>Throat ratio b₀/R: {throat.toFixed(2)}</span>
       <input type="range" class="input" min="0.08" max="0.55" step="0.01" bind:value={throat} />
@@ -169,6 +170,10 @@
     <label class="label w-44">
       <span>Construction (weld): {(weld * 100).toFixed(0)}%</span>
       <input type="range" class="input" min="0" max="1" step="0.01" bind:value={weld} />
+    </label>
+    <label class="label w-40">
+      <span>Chart overlap: {(overlap * 100).toFixed(0)}%</span>
+      <input type="range" class="input" min="0" max="1" step="0.01" bind:value={overlap} />
     </label>
     <label class="label w-40">
       <span>Zoom: {zoom.toFixed(2)}×</span>
@@ -197,15 +202,6 @@
     <button class="btn preset-tonal-surface" onclick={() => { autoRotate = !autoRotate; }}>
       {autoRotate ? '🔄 auto-rotate on' : '🔄 auto-rotate off'}
     </button>
-    <button class="btn preset-tonal-surface" onclick={() => { showCollars = !showCollars; }}>
-      {showCollars ? '🟡 collars on' : '🟡 collars off'}
-    </button>
-    <button class="btn preset-tonal-surface" onclick={() => { chartsMode = chartsMode === 0 ? 1 : 0; }}>
-      {chartsMode === 0 ? '🗺 one chart' : '🗺 two charts'}
-    </button>
-    <button class="btn preset-tonal-surface" onclick={() => { showSeam = !showSeam; }}>
-      {showSeam ? '🧵 glued seam on' : '🧵 glued seam off'}
-    </button>
     <button class="btn preset-tonal-surface" onclick={() => { yaw = 0.65; pitch = 0.42; zoom = 1.0; }}>↺ reset view</button>
     <span class="badge preset-tonal-primary">{fps} fps</span>
     <span class="badge preset-tonal-warning">{ms.toFixed(1)} ms/frame (WASM)</span>
@@ -214,70 +210,30 @@
 
   <div class="space-y-2">
     <p class="text-sm text-surface-300 font-medium">
-      Three ways to draw the same construction. Drag to orbit (one shared camera) · scroll to zoom.
-      The <strong>traveler</strong> is the same journey in all three — half speed so you can watch it.
-      The <strong>weld</strong> slider animates the ③ embedding; the ①② sheets always show the two
-      charts of the picture.
+      Drag to orbit · scroll to zoom. The <strong>weld</strong> slider replays the textbook
+      construction: two flat sheets with holes cut out → rims identified → one continuous
+      manifold. The <strong>traveler</strong> rides the surface straight through the throat —
+      and the <strong>flat annulus charts</strong> show the same surface unrolled isometrically:
+      θ preserved, height replaced by arc length, so the whole manifold becomes one ring
+      (inner rim = bottom universe, middle circle = throat, outer rim = top universe).
+      The second chart is the radially <em>reversed</em> map — top sheet on the inner rim,
+      bottom sheet on the outer rim — so you can read the throat crossing from either side.
+      The <strong>chart overlap</strong> slider is the atlas transition: at 0% each flat chart
+      covers only its own universe (the traveler shows in exactly one), and as it grows the
+      patches share a collar around the throat where the traveler appears in both.
     </p>
-
-    <div
-      class="grid grid-cols-1 md:grid-cols-3 gap-3 cursor-grab active:cursor-grabbing"
-      role="group"
-      aria-label="Wormhole construction panels: drag to orbit, scroll to zoom"
+    <canvas
+      bind:this={canvas}
+      width={CW}
+      height={CH}
+      class="rounded border border-surface-700 bg-surface-950/40 w-full cursor-grab active:cursor-grabbing"
       style="touch-action:none;"
       onpointerdown={onPointerDown}
       onpointermove={onPointerMove}
       onpointerup={onPointerUp}
       onpointercancel={onPointerUp}
       onwheel={onWheel}
-    >
-      <div class="space-y-1">
-        <p class="text-xs font-semibold uppercase tracking-wide text-surface-400">① two sheets · before gluing</p>
-        <canvas
-          bind:this={c0}
-          width={VPW}
-          height={VPH}
-          class="rounded border border-surface-700 bg-surface-950/40 w-full"
-        ></canvas>
-        <p class="text-xs text-surface-400">
-          Cut a disk out of each plane — two sheets with boundary circles (drawn outlines). The
-          traveler rides one sheet at a time; far from the hole it's only on one chart.
-        </p>
-      </div>
-
-      <div class="space-y-1">
-        <p class="text-xs font-semibold uppercase tracking-wide text-surface-400">② gluing the collars · identification</p>
-        <canvas
-          bind:this={c1}
-          width={VPW}
-          height={VPH}
-          class="rounded border border-surface-700 bg-surface-950/40 w-full"
-        ></canvas>
-        <p class="text-xs text-surface-400">
-          The collars get prepared with the same two hues — yellow &amp; indigo — radially
-          inverted between the sheets: yellow-out/indigo-in on top, indigo-out/yellow-in on the
-          bottom. Glue them and the gradient flows yellow → indigo down the throat (③). The dashed
-          connector (and second traveler dot) fade in only inside the overlap — outside the collars
-          the two sheets are separate universes, so the traveler has no second copy. The bottom
-          sheet is read in its own mirrored chart (θ ↦ −θ), and that chart's drawing frame is
-          mirrored too — so the identified point lines up with panel ③'s physical position.
-        </p>
-      </div>
-
-      <div class="space-y-1">
-        <p class="text-xs font-semibold uppercase tracking-wide text-surface-400">③ one chart · the embedding</p>
-        <canvas
-          bind:this={c2}
-          width={VPW}
-          height={VPH}
-          class="rounded border border-surface-700 bg-surface-950/40 w-full"
-        ></canvas>
-        <p class="text-xs text-surface-400">
-          The smooth throat — a luxury of projecting into a 3rd dimension the traveler can't
-          perceive. Same space as ①②, drawn as a single chart. Weld slider animates the gluing.
-        </p>
-      </div>
-    </div>
+    ></canvas>
   </div>
 
 </div>
