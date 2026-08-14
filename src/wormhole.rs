@@ -134,6 +134,7 @@ pub struct ShapeCfg {
     pub stretch: f64, // vertical stretch of the tube
     pub weld: f64,    // 0 = two separate holed sheets … 1 = welded throat
     pub overlap: f64, // chart atlas: how far each flat chart reaches past the throat (0..1)
+    pub throat_line: bool, // draw the dashed throat circle on the flat charts
     pub rings_half: u32,
     pub segs: u32,
 }
@@ -347,7 +348,7 @@ fn build_chart(c: &ShapeCfg, reversed: bool) -> (Vec<Quad>, Vec<Seg>) {
     }
 
     // throat circle: dashed pale ring when welded
-    if c.weld > 0.999 {
+    if c.weld > 0.999 && c.throat_line {
         let rho = g.rho_th / g.r_out;
         for j in (0..m).step_by(2) {
             let t0 = TAU * j as f64 / m as f64;
@@ -375,18 +376,39 @@ fn mix(a: [f64; 3], b: [f64; 3], t: f64) -> [f64; 3] {
     ]
 }
 
-/// The screenshot palette: green top sheet, yellow upper throat,
-/// periwinkle lower throat, soft-red bottom sheet.
-fn classic(u: f64) -> [f64; 3] {
-    let yellow = [0.98, 0.87, 0.35];
-    let green = [0.55, 0.93, 0.65];
-    let indigo = [0.51, 0.55, 0.96];
-    let red = [0.98, 0.64, 0.64];
-    if u >= 0.0 {
-        mix(yellow, green, u / 0.55)
-    } else {
-        mix(indigo, red, -u / 0.55)
+/// Smooth multi-stop gradient. Stops sorted by descending u; each segment
+/// is eased with smoothstep so the whole ramp is visually C1.
+fn grad(stops: &[(f64, [f64; 3])], u: f64) -> [f64; 3] {
+    let last = stops.len() - 1;
+    if u >= stops[0].0 {
+        return stops[0].1;
     }
+    if u <= stops[last].0 {
+        return stops[last].1;
+    }
+    for w in stops.windows(2) {
+        if u <= w[0].0 && u >= w[1].0 {
+            let t = (w[0].0 - u) / (w[0].0 - w[1].0 + 1e-12);
+            let t = t * t * (3.0 - 2.0 * t);
+            return mix(w[0].1, w[1].1, t);
+        }
+    }
+    stops[last].1
+}
+
+/// The screenshot palette: green top sheet, yellow upper throat,
+/// periwinkle lower throat, soft-red bottom sheet — with a soft blend
+/// collar across the weld instead of a hard yellow/periwinkle edge.
+fn classic(u: f64) -> [f64; 3] {
+    grad(
+        &[
+            (0.60, [0.55, 0.93, 0.65]), // green top sheet
+            (0.22, [0.98, 0.87, 0.35]), // yellow upper throat
+            (-0.22, [0.51, 0.55, 0.96]), // periwinkle lower throat
+            (-0.60, [0.98, 0.64, 0.64]), // soft red bottom sheet
+        ],
+        u,
+    )
 }
 
 /// Cool cosine palette keyed to height (for the "spectrum" mode).
@@ -638,7 +660,7 @@ mod tests {
     use super::*;
 
     fn cfg(weld: f64) -> ShapeCfg {
-        ShapeCfg { profile: 0, q: 0.3, stretch: 1.4, weld, overlap: 1.0, rings_half: 8, segs: 24 }
+        ShapeCfg { profile: 0, q: 0.3, stretch: 1.4, weld, overlap: 1.0, throat_line: true, rings_half: 8, segs: 24 }
     }
 
     #[test]
@@ -847,5 +869,38 @@ mod tests {
         assert!(half < full, "0% overlap draws fewer chart quads ({} vs {})", half, full);
         assert!((half as f64) > 0.4 * full as f64 && (half as f64) < 0.6 * full as f64,
             "two complementary half-manifolds ≈ half the quads: {} vs {}", half, full);
+    }
+
+    #[test]
+    fn classic_palette_blends_gradually_across_weld() {
+        let dist = |a: [f64; 3], b: [f64; 3]| {
+            ((a[0] - b[0]).powi(2) + (a[1] - b[1]).powi(2) + (a[2] - b[2]).powi(2)).sqrt()
+        };
+        // no hard edge at the throat: neighbors across u=0 nearly identical
+        assert!(
+            dist(classic(1e-4), classic(-1e-4)) < 0.01,
+            "color continuous through the weld"
+        );
+        // the whole ramp changes gently: small steps everywhere
+        let mut u = -1.0;
+        while u < 1.0 {
+            let d = dist(classic(u), classic(u + 0.01));
+            assert!(d < 0.08, "gradual at u={u}: {d}");
+            u += 0.01;
+        }
+        // far ends keep the sheet identities
+        assert!(dist(classic(1.0), [0.55, 0.93, 0.65]) < 1e-9);
+        assert!(dist(classic(-1.0), [0.98, 0.64, 0.64]) < 1e-9);
+    }
+
+    #[test]
+    fn throat_ring_toggle_removes_dashed_circle() {
+        let mut c = cfg(1.0);
+        let with = render(800, 600, 0.7, 0.5, 1.0, &c, 0, 1, -1.0);
+        c.throat_line = false;
+        let without = render(800, 600, 0.7, 0.5, 1.0, &c, 0, 1, -1.0);
+        // two charts x (segs/2) dashed segments x 10 floats per line record
+        let dashed = (24 / 2) * 2 * 10;
+        assert_eq!(with.len(), without.len() + dashed);
     }
 }

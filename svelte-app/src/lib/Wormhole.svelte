@@ -17,6 +17,7 @@
   let wireframe = $state(false);
   let traveler = $state(true);
   let autoRotate = $state(true);
+  let throatRing = $state(true);
   let quality = $state(1);      // 0 low, 1 med, 2 high
   let zoom = $state(1.0);
 
@@ -108,7 +109,7 @@
     const t0 = performance.now();
     const list = wasm.wh_render(
       CW, CH, yaw, pitch, zoom,
-      profile, throat, stretch, weld, overlap,
+      profile, throat, stretch, weld, overlap, throatRing,
       colorMode, viewMode, rings, segs,
       traveler ? tSec : -1,
     );
@@ -201,6 +202,9 @@
     </button>
     <button class="btn preset-tonal-surface" onclick={() => { autoRotate = !autoRotate; }}>
       {autoRotate ? '🔄 auto-rotate on' : '🔄 auto-rotate off'}
+    </button>
+    <button class="btn preset-tonal-surface" onclick={() => { throatRing = !throatRing; }}>
+      {throatRing ? '◎ throat ring on' : '◎ throat ring off'}
     </button>
     <button class="btn preset-tonal-surface" onclick={() => { yaw = 0.65; pitch = 0.42; zoom = 1.0; }}>↺ reset view</button>
     <span class="badge preset-tonal-primary">{fps} fps</span>
