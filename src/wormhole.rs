@@ -134,6 +134,7 @@ pub struct ShapeCfg {
     pub stretch: f64, // vertical stretch of the tube
     pub weld: f64,    // 0 = two separate holed sheets … 1 = welded throat
     pub overlap: f64, // chart atlas: how far each flat chart reaches past the throat (0..1)
+    pub throat_line: bool, // draw the dashed throat circle on the flat charts
     pub rings_half: u32,
     pub segs: u32,
 }
@@ -347,7 +348,7 @@ fn build_chart(c: &ShapeCfg, reversed: bool) -> (Vec<Quad>, Vec<Seg>) {
     }
 
     // throat circle: dashed pale ring when welded
-    if c.weld > 0.999 {
+    if c.weld > 0.999 && c.throat_line {
         let rho = g.rho_th / g.r_out;
         for j in (0..m).step_by(2) {
             let t0 = TAU * j as f64 / m as f64;
@@ -659,7 +660,7 @@ mod tests {
     use super::*;
 
     fn cfg(weld: f64) -> ShapeCfg {
-        ShapeCfg { profile: 0, q: 0.3, stretch: 1.4, weld, overlap: 1.0, rings_half: 8, segs: 24 }
+        ShapeCfg { profile: 0, q: 0.3, stretch: 1.4, weld, overlap: 1.0, throat_line: true, rings_half: 8, segs: 24 }
     }
 
     #[test]
@@ -890,5 +891,16 @@ mod tests {
         // far ends keep the sheet identities
         assert!(dist(classic(1.0), [0.55, 0.93, 0.65]) < 1e-9);
         assert!(dist(classic(-1.0), [0.98, 0.64, 0.64]) < 1e-9);
+    }
+
+    #[test]
+    fn throat_ring_toggle_removes_dashed_circle() {
+        let mut c = cfg(1.0);
+        let with = render(800, 600, 0.7, 0.5, 1.0, &c, 0, 1, -1.0);
+        c.throat_line = false;
+        let without = render(800, 600, 0.7, 0.5, 1.0, &c, 0, 1, -1.0);
+        // two charts x (segs/2) dashed segments x 10 floats per line record
+        let dashed = (24 / 2) * 2 * 10;
+        assert_eq!(with.len(), without.len() + dashed);
     }
 }
