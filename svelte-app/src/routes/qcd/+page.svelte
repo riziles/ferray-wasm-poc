@@ -45,7 +45,7 @@
   <div class="h-full bg-gradient-to-r from-primary-500 via-warning-500 to-error-500" style="width: {descend}%"></div>
 </div>
 
-<div class="qcd-page container mx-auto px-4 py-8 max-w-4xl space-y-16 pb-24">
+<div class="container mx-auto px-4 py-8 max-w-4xl space-y-16 pb-24">
   <!-- ───────────────────────── hero ───────────────────────── -->
   <header class="space-y-6">
     <div class="flex flex-wrap items-center gap-2">

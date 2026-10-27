@@ -1,5 +1,13 @@
 @import 'tailwindcss';
 
+/* This site is dark-only by design (the layouts hardcode bg-surface-900), but
+   Tailwind's default `dark` variant keys off prefers-color-scheme. A visitor
+   whose OS prefers light mode therefore got Skeleton's *light* tokens — dark
+   headings, labels and tonal badges on a dark background. Pin the variant to
+   an explicit attribute that app.html sets on <html>, so the theme and the
+   hardcoded background can never disagree again. */
+@custom-variant dark (&:where([data-mode='dark'], [data-mode='dark'] *));
+
 @import '@skeletonlabs/skeleton';
 @import '@skeletonlabs/skeleton-svelte';
 @import '@skeletonlabs/skeleton/themes/cerberus';
@@ -26,38 +34,6 @@ canvas.spectrum-canvas {
 /* Lightweight card borders for dark theme */
 .card-demo {
 	border: 1px solid var(--color-surface-600);
-}
-
-/* ---- QCD explainer ------------------------------------------------
-   The dark-theme palette above is forced regardless of the OS preference
-   (the layout hardcodes bg-surface-900), so the theme tokens that use
-   light-dark() need to be pinned to their dark values on this page. */
-.qcd-page {
-	color-scheme: dark;
-}
-.qcd-page :is(.h1, .h2, .h3) {
-	color: var(--color-surface-100);
-}
-.qcd-page .label > span {
-	color: var(--color-surface-300);
-}
-/* and the tonal badges, which also resolve via light-dark() */
-.qcd-page .preset-tonal {
-	color: var(--color-primary-50);
-	background-color: color-mix(in oklab, var(--color-surface-50) 8%, transparent);
-}
-.qcd-page .preset-tonal-primary {
-	color: var(--color-primary-50);
-	background-color: color-mix(in oklab, var(--color-primary-500) 22%, transparent);
-}
-.qcd-page .preset-tonal-warning {
-	color: var(--color-warning-300);
-}
-.qcd-page .preset-tonal-error {
-	color: var(--color-error-300);
-}
-.qcd-page .preset-tonal-success {
-	color: var(--color-success-300);
 }
 
 .code-block {
