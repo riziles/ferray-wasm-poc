@@ -24,6 +24,24 @@
   <Hero />
 
   <section class="group/demo border border-primary-700/40 rounded-lg p-4 bg-primary-950/10">
+    <a href="{base}/qcd" data-sveltekit-prefetch class="block hover:text-primary-400 transition-colors">
+      <h2 class="h2 mb-2 cursor-pointer">🌈 Quantum Chromodynamics <span class="badge preset-filled-primary-500 text-xs">NEW</span></h2>
+    </a>
+    <p class="text-sm text-surface-400 mb-3">
+      An interactive descent into the strong force: colour charge, gluon self-coupling, confinement,
+      asymptotic freedom, the not-empty vacuum, and a theory whose mathematical existence is still an
+      open problem. Every picture is a labelled cartoon, and the labels get worse as the physics gets
+      better. <span class="text-surface-500">(Pure TypeScript — no WASM needed.)</span>
+    </p>
+    <div class="flex flex-wrap gap-2 text-xs">
+      <span class="badge preset-tonal">9 acts</span>
+      <span class="badge preset-tonal">8 interactive demos</span>
+      <span class="badge preset-tonal-warning">picture honesty: 78% → 4%</span>
+      <a href="{base}/qcd" data-sveltekit-prefetch class="badge preset-filled-primary-500">Enter the descent →</a>
+    </div>
+  </section>
+
+  <section class="group/demo border border-primary-700/40 rounded-lg p-4 bg-primary-950/10">
     <a href="{base}/wormhole" data-sveltekit-prefetch class="block hover:text-primary-400 transition-colors">
       <h2 class="h2 mb-4 cursor-pointer">🌀 Wormhole Embedding Diagram <span class="badge preset-filled-primary text-xs">NEW</span></h2>
     </a>

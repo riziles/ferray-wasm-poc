@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#2a1030"/>
+    </linearGradient>
+    <linearGradient id="tube" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#f87171"/>
+      <stop offset="50%" style="stop-color:#fbbf24"/>
+      <stop offset="100%" style="stop-color:#93c5fd"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#38bdf8;stop-opacity:0.30"/>
+      <stop offset="100%" style="stop-color:#38bdf8;stop-opacity:0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <ellipse cx="330" cy="410" rx="280" ry="190" fill="url(#glow)"/>
+
+  <text x="70" y="100" font-family="system-ui,sans-serif" font-weight="bold" font-size="52" fill="#e2e8f0">Quantum Chromodynamics</text>
+  <text x="70" y="142" font-family="system-ui,sans-serif" font-size="24" fill="#94a3b8">Eight gluons, no free quarks, and a theory that does not quite exist</text>
+
+  <!-- flux tube with a quark pair -->
+  <path d="M235,320 C315,290 415,350 505,320" stroke="url(#tube)" stroke-width="34" stroke-linecap="round" fill="none" opacity="0.85"/>
+  <path d="M235,320 C315,290 415,350 505,320" stroke="#fef9c3" stroke-width="2.5" fill="none" opacity="0.7"/>
+  <circle cx="235" cy="320" r="22" fill="#f87171" stroke="#0b1020" stroke-width="2"/>
+  <text x="235" y="326" font-family="monospace" font-size="15" fill="#0b1020" text-anchor="middle">q</text>
+  <circle cx="505" cy="320" r="22" fill="#93c5fd" stroke="#0b1020" stroke-width="2"/>
+  <text x="505" y="326" font-family="monospace" font-size="15" fill="#0b1020" text-anchor="middle">q̄</text>
+
+  <!-- colour-charge triad -->
+  <circle cx="185" cy="440" r="17" fill="#f87171"/>
+  <circle cx="245" cy="440" r="17" fill="#4ade80"/>
+  <circle cx="305" cy="440" r="17" fill="#60a5fa"/>
+  <path d="M185,440 L245,440 L305,440" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5 5" fill="none"/>
+  <text x="245" y="482" font-family="monospace" font-size="17" fill="#94a3b8" text-anchor="middle">|ε qqq|² = 1</text>
+
+  <!-- right column -->
+  <text x="660" y="230" font-family="monospace" font-size="22" fill="#7dd3fc">α_s(Q): 1.0 → 0.118</text>
+  <path d="M660,262 C668,318 692,338 752,344 C830,350 950,352 1090,354" stroke="#38bdf8" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.5"/>
+
+  <text x="660" y="410" font-family="system-ui,sans-serif" font-weight="bold" font-size="26" fill="#e2e8f0">An interactive descent</text>
+  <circle cx="668" cy="452" r="5" fill="#f87171"/>
+  <text x="690" y="458" font-family="system-ui,sans-serif" font-size="19" fill="#cbd5e1">colour charge · confinement</text>
+  <circle cx="668" cy="492" r="5" fill="#fbbf24"/>
+  <text x="690" y="498" font-family="system-ui,sans-serif" font-size="19" fill="#cbd5e1">asymptotic freedom · the vacuum</text>
+  <circle cx="668" cy="532" r="5" fill="#38bdf8"/>
+  <text x="690" y="538" font-family="system-ui,sans-serif" font-size="19" fill="#cbd5e1">why 99% of your mass is glue</text>
+  <circle cx="668" cy="572" r="5" fill="#a78bfa"/>
+  <text x="690" y="578" font-family="system-ui,sans-serif" font-size="19" fill="#cbd5e1">a theory whose existence is unproven</text>
+
+  <text x="70" y="590" font-family="monospace" font-size="16" fill="#f59e0b">picture honesty: 78% → 4%</text>
+  <text x="600" y="614" text-anchor="middle" font-family="monospace" font-size="15" fill="#7c8ba1">riziles.github.io/ferray-wasm-poc/qcd</text>
+</svg>

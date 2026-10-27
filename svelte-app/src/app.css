@@ -28,6 +28,38 @@ canvas.spectrum-canvas {
 	border: 1px solid var(--color-surface-600);
 }
 
+/* ---- QCD explainer ------------------------------------------------
+   The dark-theme palette above is forced regardless of the OS preference
+   (the layout hardcodes bg-surface-900), so the theme tokens that use
+   light-dark() need to be pinned to their dark values on this page. */
+.qcd-page {
+	color-scheme: dark;
+}
+.qcd-page :is(.h1, .h2, .h3) {
+	color: var(--color-surface-100);
+}
+.qcd-page .label > span {
+	color: var(--color-surface-300);
+}
+/* and the tonal badges, which also resolve via light-dark() */
+.qcd-page .preset-tonal {
+	color: var(--color-primary-50);
+	background-color: color-mix(in oklab, var(--color-surface-50) 8%, transparent);
+}
+.qcd-page .preset-tonal-primary {
+	color: var(--color-primary-50);
+	background-color: color-mix(in oklab, var(--color-primary-500) 22%, transparent);
+}
+.qcd-page .preset-tonal-warning {
+	color: var(--color-warning-300);
+}
+.qcd-page .preset-tonal-error {
+	color: var(--color-error-300);
+}
+.qcd-page .preset-tonal-success {
+	color: var(--color-success-300);
+}
+
 .code-block {
 	font-family: 'JetBrains Mono', 'Fira Code', monospace;
 	font-size: 0.85rem;

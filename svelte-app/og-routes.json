@@ -1,46 +1,57 @@
 {
   "index": {
-    "og:title": "Ferray × WASM — Rust NumPy in the Browser",
-    "og:description": "10 interactive demos: FFT, Gaussian blur, Barbault Basket planetary chart, Jacobian conjecture counterexample, and more — all powered by Ferray compiled to WebAssembly.",
+    "og:title": "Ferray \u00d7 WASM \u2014 Rust NumPy in the Browser",
+    "og:description": "10 interactive demos: FFT, Gaussian blur, Barbault Basket planetary chart, Jacobian conjecture counterexample, and more \u2014 all powered by Ferray compiled to WebAssembly.",
     "og:image": "https://riziles.github.io/ferray-wasm-poc/og-image.png",
     "og:url": "https://riziles.github.io/ferray-wasm-poc/",
     "og:type": "website",
     "twitter:card": "summary_large_image",
-    "twitter:title": "Ferray × WASM — Rust NumPy in the Browser",
+    "twitter:title": "Ferray \u00d7 WASM \u2014 Rust NumPy in the Browser",
     "twitter:description": "10 interactive demos powered by Ferray compiled to WebAssembly.",
     "twitter:image": "https://riziles.github.io/ferray-wasm-poc/og-image.png"
   },
   "barbault-basket": {
-    "og:title": "🪐 Barbault Basket — Planetary Ecliptic Chart | Ferray × WASM",
+    "og:title": "\ud83e\ude90 Barbault Basket \u2014 Planetary Ecliptic Chart | Ferray \u00d7 WASM",
     "og:description": "Watch outer planets form the rare Barbault Basket alignment around July 2026. Computed via Kepler's equation in Rust WASM.",
     "og:image": "https://riziles.github.io/ferray-wasm-poc/og-barbault.png",
     "og:url": "https://riziles.github.io/ferray-wasm-poc/barbault-basket",
     "og:type": "website",
     "twitter:card": "summary_large_image",
-    "twitter:title": "🪐 Barbault Basket — Planetary Ecliptic Chart | Ferray × WASM",
+    "twitter:title": "\ud83e\ude90 Barbault Basket \u2014 Planetary Ecliptic Chart | Ferray \u00d7 WASM",
     "twitter:description": "Watch outer planets form the rare Barbault Basket alignment around July 2026.",
     "twitter:image": "https://riziles.github.io/ferray-wasm-poc/og-barbault.png"
   },
   "kan": {
-    "og:title": "🧠 Kolmogorov–Arnold Network — Live KAN Training | Ferray × WASM",
-    "og:description": "Watch a KAN learn 2D functions in your browser: every edge is a learnable B-spline. Trained live in Rust → WASM with full-batch Adam.",
+    "og:title": "\ud83e\udde0 Kolmogorov\u2013Arnold Network \u2014 Live KAN Training | Ferray \u00d7 WASM",
+    "og:description": "Watch a KAN learn 2D functions in your browser: every edge is a learnable B-spline. Trained live in Rust \u2192 WASM with full-batch Adam.",
     "og:image": "https://riziles.github.io/ferray-wasm-poc/og-kan.png",
     "og:url": "https://riziles.github.io/ferray-wasm-poc/kan",
     "og:type": "website",
     "twitter:card": "summary_large_image",
-    "twitter:title": "🧠 Kolmogorov–Arnold Network — Live KAN Training | Ferray × WASM",
-    "twitter:description": "Watch a KAN learn 2D functions in your browser — B-spline edge functions trained live in WASM.",
+    "twitter:title": "\ud83e\udde0 Kolmogorov\u2013Arnold Network \u2014 Live KAN Training | Ferray \u00d7 WASM",
+    "twitter:description": "Watch a KAN learn 2D functions in your browser \u2014 B-spline edge functions trained live in WASM.",
     "twitter:image": "https://riziles.github.io/ferray-wasm-poc/og-kan.png"
   },
   "wormhole": {
-    "og:title": "🌀 Wormhole Embedding Diagram — Interactive 3D | Ferray × WASM",
-    "og:description": "The classic 'two sheets joined by a throat' picture as a real 3D model: Ellis & Flamm embedding surfaces, weld morph, and a traveler through the throat — rendered in Rust WASM.",
+    "og:title": "\ud83c\udf00 Wormhole Embedding Diagram \u2014 Interactive 3D | Ferray \u00d7 WASM",
+    "og:description": "The classic 'two sheets joined by a throat' picture as a real 3D model: Ellis & Flamm embedding surfaces, weld morph, and a traveler through the throat \u2014 rendered in Rust WASM.",
     "og:image": "https://riziles.github.io/ferray-wasm-poc/og-wormhole.png",
     "og:url": "https://riziles.github.io/ferray-wasm-poc/wormhole",
     "og:type": "website",
     "twitter:card": "summary_large_image",
-    "twitter:title": "🌀 Wormhole Embedding Diagram — Interactive 3D | Ferray × WASM",
-    "twitter:description": "Ellis & Flamm embedding surfaces as an interactive 3D model — weld the sheets, ride the traveler. Rendered in Rust WASM.",
+    "twitter:title": "\ud83c\udf00 Wormhole Embedding Diagram \u2014 Interactive 3D | Ferray \u00d7 WASM",
+    "twitter:description": "Ellis & Flamm embedding surfaces as an interactive 3D model \u2014 weld the sheets, ride the traveler. Rendered in Rust WASM.",
     "twitter:image": "https://riziles.github.io/ferray-wasm-poc/og-wormhole.png"
+  },
+  "qcd": {
+    "og:title": "\ud83c\udf08 Quantum Chromodynamics \u2014 An Interactive Descent | Ferray \u00d7 WASM",
+    "og:description": "Colour charge, gluon self-coupling, confinement, asymptotic freedom, the non-empty vacuum, and a theory whose mathematical existence is an open problem. Every picture is a labelled cartoon \u2014 and the labels get worse as the physics gets better.",
+    "og:image": "https://riziles.github.io/ferray-wasm-poc/og-qcd.png",
+    "og:url": "https://riziles.github.io/ferray-wasm-poc/qcd",
+    "og:type": "website",
+    "twitter:card": "summary_large_image",
+    "twitter:title": "\ud83c\udf08 Quantum Chromodynamics \u2014 An Interactive Descent | Ferray \u00d7 WASM",
+    "twitter:description": "The strong force, from 'quarks are held by springs' to 'the perturbation series does not converge'. Picture honesty: 78% \u2192 4%.",
+    "twitter:image": "https://riziles.github.io/ferray-wasm-poc/og-qcd.png"
   }
 }
