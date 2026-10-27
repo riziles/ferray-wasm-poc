@@ -10,6 +10,7 @@ Twelve interactive demos running entirely in a ~900 KB WASM binary:
 
 | Demo | Crates used | Description |
 |---|---|---|
+| 🌈 Quantum Chromodynamics | — (pure TypeScript) | 9-act interactive descent into the strong force, with a per-section “picture honesty” score that decays from 78% to 4% |
 | 🌀 Wormhole Embedding Diagram | — (pure scalar Rust) | Interactive 3D Ellis/Flamm wormhole: weld morph, drag-orbit, throat traveler, flat annulus chart |
 | 🧠 Kolmogorov–Arnold Network | — (pure scalar Rust) | Live KAN training: B-spline edge functions fit 2D targets in-browser |
 | 📐 Sum of Squares | `ferray-core` | Interactive `Float64Array` → WASM → Σ x² |

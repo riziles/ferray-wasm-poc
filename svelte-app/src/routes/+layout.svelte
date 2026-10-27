@@ -12,6 +12,10 @@
 
   setContext('wasm', () => wasm);
 
+  // Some pages are pure TypeScript and must render even if the WASM build is
+  // missing or broken (e.g. the QCD explainer).
+  const wasmOptional = $derived(page.url.pathname.startsWith(base + '/qcd'));
+
   onMount(async () => {
     try {
       wasm = await initWasm();
@@ -21,14 +25,14 @@
   });
 </script>
 
-{#if error}
+{#if error && !wasmOptional}
   <main class="min-h-screen flex items-center justify-center bg-surface-900 p-8">
     <div class="card preset-filled-error p-8 max-w-md text-center">
       <h1 class="h1 mb-2">⚠️ WASM Init Failed</h1>
       <p class="text-xs font-mono opacity-80 break-all">{error}</p>
     </div>
   </main>
-{:else if !wasm}
+{:else if !wasm && !wasmOptional}
   <main class="min-h-screen flex items-center justify-center bg-surface-900 p-8">
     <div class="flex flex-col items-center gap-4">
       <div class="spinner"></div>

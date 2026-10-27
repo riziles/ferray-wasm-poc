@@ -1,5 +1,13 @@
 @import 'tailwindcss';
 
+/* This site is dark-only by design (the layouts hardcode bg-surface-900), but
+   Tailwind's default `dark` variant keys off prefers-color-scheme. A visitor
+   whose OS prefers light mode therefore got Skeleton's *light* tokens — dark
+   headings, labels and tonal badges on a dark background. Pin the variant to
+   an explicit attribute that app.html sets on <html>, so the theme and the
+   hardcoded background can never disagree again. */
+@custom-variant dark (&:where([data-mode='dark'], [data-mode='dark'] *));
+
 @import '@skeletonlabs/skeleton';
 @import '@skeletonlabs/skeleton-svelte';
 @import '@skeletonlabs/skeleton/themes/cerberus';
