@@ -43,28 +43,28 @@
 
   <section class="group/demo border border-primary-700/40 rounded-lg p-4 bg-primary-950/10">
     <a href="{base}/wormhole" data-sveltekit-prefetch class="block hover:text-primary-400 transition-colors">
-      <h2 class="h2 mb-4 cursor-pointer">🌀 Wormhole Embedding Diagram <span class="badge preset-filled-primary text-xs">NEW</span></h2>
+      <h2 class="h2 mb-4 cursor-pointer">🌀 Wormhole Embedding Diagram <span class="badge preset-filled-primary-500 text-xs">NEW</span></h2>
     </a>
     <Wormhole {wasm} />
   </section>
 
   <section class="group/demo border border-primary-700/40 rounded-lg p-4 bg-primary-950/10">
     <a href="{base}/kan" data-sveltekit-prefetch class="block hover:text-primary-400 transition-colors">
-      <h2 class="h2 mb-4 cursor-pointer">🧠 Kolmogorov–Arnold Network <span class="badge preset-filled-primary text-xs">NEW</span></h2>
+      <h2 class="h2 mb-4 cursor-pointer">🧠 Kolmogorov–Arnold Network <span class="badge preset-filled-primary-500 text-xs">NEW</span></h2>
     </a>
     <Kan {wasm} />
   </section>
 
   <section class="group/demo border border-primary-700/40 rounded-lg p-4 bg-primary-950/10">
     <a href="{base}/jacobian" data-sveltekit-prefetch class="block hover:text-primary-400 transition-colors">
-      <h2 class="h2 mb-4 cursor-pointer">🧮 Jacobian Conjecture Counterexample <span class="badge preset-filled-error text-xs">NEW</span></h2>
+      <h2 class="h2 mb-4 cursor-pointer">🧮 Jacobian Conjecture Counterexample <span class="badge preset-filled-error-500 text-xs">NEW</span></h2>
     </a>
     <Jacobian {wasm} />
   </section>
 
   <section class="group/demo border border-amber-700/30 rounded-lg p-4 bg-amber-950/5">
     <a href="{base}/counterexample-lab" data-sveltekit-prefetch class="block hover:text-primary-400 transition-colors">
-      <h2 class="h2 mb-4 cursor-pointer">🔬 Counterexample Lab <span class="badge preset-filled-warning text-xs">NEW</span></h2>
+      <h2 class="h2 mb-4 cursor-pointer">🔬 Counterexample Lab <span class="badge preset-filled-warning-500 text-xs">NEW</span></h2>
     </a>
     <CounterexampleLab {wasm} />
   </section>
@@ -113,7 +113,7 @@
 
   <section class="group/demo">
     <a href="{base}/barbault-basket" data-sveltekit-prefetch class="block hover:text-primary-400 transition-colors">
-      <h2 class="h2 mb-4 cursor-pointer">🪐 Barbault Basket <span class="badge preset-filled-primary text-xs">NEW</span></h2>
+      <h2 class="h2 mb-4 cursor-pointer">🪐 Barbault Basket <span class="badge preset-filled-primary-500 text-xs">NEW</span></h2>
     </a>
     <BarbaultBasket {wasm} />
   </section>

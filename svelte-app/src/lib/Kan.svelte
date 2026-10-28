@@ -309,7 +309,7 @@
   </div>
 
   <div class="flex gap-2 items-center flex-wrap">
-    <button class="btn preset-filled-primary" onclick={() => { playing = !playing; if (playing) rafId = requestAnimationFrame(loop); }}>
+    <button class="btn preset-filled-primary-500" onclick={() => { playing = !playing; if (playing) rafId = requestAnimationFrame(loop); }}>
       {playing ? '⏸ Pause' : '▶ Train'}
     </button>
     <button class="btn preset-tonal-surface" onclick={() => { reset(); playing = true; rafId = requestAnimationFrame(loop); }}>↺ Reset weights</button>

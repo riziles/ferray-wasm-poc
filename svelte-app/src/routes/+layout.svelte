@@ -27,7 +27,7 @@
 
 {#if error && !wasmOptional}
   <main class="min-h-screen flex items-center justify-center bg-surface-900 p-8">
-    <div class="card preset-filled-error p-8 max-w-md text-center">
+    <div class="card preset-filled-error-500 p-8 max-w-md text-center">
       <h1 class="h1 mb-2">⚠️ WASM Init Failed</h1>
       <p class="text-xs font-mono opacity-80 break-all">{error}</p>
     </div>
