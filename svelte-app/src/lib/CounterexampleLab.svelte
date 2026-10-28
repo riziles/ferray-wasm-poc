@@ -103,7 +103,7 @@
       <button class="btn preset-tonal text-xs" onclick={loadAlpoge}>📋 Load Alpöge</button>
       <button class="btn preset-tonal text-xs" onclick={randomize}>🎲 Randomize</button>
       {#if autoSearching}
-        <button class="btn preset-filled-warning text-xs animate-pulse" onclick={stopAutoSearch}>⏹ Stop ({autoIter})</button>
+        <button class="btn preset-filled-warning-500 text-xs animate-pulse" onclick={stopAutoSearch}>⏹ Stop ({autoIter})</button>
       {:else}
         <button class="btn preset-tonal text-xs" onclick={startAutoSearch}>🤖 Auto-Search</button>
       {/if}
@@ -139,7 +139,7 @@
         </label>
       {/each}
       <div class="flex gap-2 items-center">
-        <button class="btn preset-filled-primary text-xs" onclick={runCustomScore}>Parse & Score</button>
+        <button class="btn preset-filled-primary-500 text-xs" onclick={runCustomScore}>Parse & Score</button>
         <button class="btn preset-tonal text-xs" onclick={() => { customF1='z*(1+x*y)^3 + y^2*(1+x*y)*(4+3*x*y)'; customF2='y + 3*x*(1+x*y)^2*z + 3*x*y^2*(4+3*x*y)'; customF3='2*x - 3*x^2*y - x^3*z'; setTimeout(runCustomScore, 50); }}>📋 Load Alpöge</button>
       </div>
       {#if parseError}

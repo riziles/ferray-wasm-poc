@@ -313,12 +313,12 @@
     <input type="date" class="input text-xs w-36" bind:value={date} oninput={onDateChange} />
     <button class="btn preset-tonal text-xs" onclick={animate}>🔄 Update</button>
     {#if animating}
-      <button class="btn preset-filled-warning text-xs" onclick={stopAnimation}>⏹ Stop</button>
+      <button class="btn preset-filled-warning-500 text-xs" onclick={stopAnimation}>⏹ Stop</button>
     {:else}
       <button class="btn preset-tonal text-xs" onclick={startAnimation}>▶ Play (10d steps)</button>
     {/if}
     {#if fastForwarding}
-      <button class="btn preset-filled-warning text-xs animate-pulse" onclick={stopFastForward}>⏹ Stop FF</button>
+      <button class="btn preset-filled-warning-500 text-xs animate-pulse" onclick={stopFastForward}>⏹ Stop FF</button>
     {:else}
       <button class="btn preset-tonal text-xs" onclick={fastForwardToNextBasket} title="Scan 500 years to find the next basket">⏩ Next Basket</button>
     {/if}
