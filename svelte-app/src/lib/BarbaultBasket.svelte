@@ -2,14 +2,18 @@
   import { onMount } from 'svelte';
   import type { WasmApi } from './wasm/loader';
 
-  let { wasm } = $props<{ wasm: WasmApi }>();
+  interface Props {
+    wasm: WasmApi;
+  }
+
+  let { wasm }: Props = $props();
 
   const planetNames = ['Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'];
   const planetSymbols = ['♃', '♄', '♅', '♆', '♇'];
   const planetColors = ['#fbbf24', '#d4a574', '#60a5fa', '#3b82f6', '#a78bfa'];
 
   let date = $state('2026-07-20');
-  let positions = $state<number[]>([0, 5.2, 0, 9.5, 0, 19.2, 0, 30.1, 0, 39.5]);
+  let positions = $state<Float64Array>(new Float64Array([0, 5.2, 0, 9.5, 0, 19.2, 0, 30.1, 0, 39.5]));
   let barbaultIdx = $state(0);
   let canvas: HTMLCanvasElement | null = $state(null);
   let zoom = $state(1.0);

@@ -1,7 +1,12 @@
 <script lang="ts">
+  import type { WasmApi } from './wasm/loader';
   import { onMount, tick } from 'svelte';
 
-  let { wasm } = $props<{ wasm: ReturnType<typeof import('./wasm/loader').getWasm> }>();
+  interface Props {
+    wasm: WasmApi;
+  }
+
+  let { wasm }: Props = $props();
 
   let points = $state(256);
   let canvas: HTMLCanvasElement;

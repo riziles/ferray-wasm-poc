@@ -1,7 +1,12 @@
 <script lang="ts">
+  import type { WasmApi } from './wasm/loader';
   import { onMount } from 'svelte';
 
-  let { wasm } = $props<{ wasm: ReturnType<typeof import('./wasm/loader').getWasm> }>();
+  interface Props {
+    wasm: WasmApi;
+  }
+
+  let { wasm }: Props = $props();
 
   let canvas: HTMLCanvasElement;
   let detVal = $state(0);
@@ -101,7 +106,7 @@
     const inputPts = getSlicePoints();
 
     // Compute output points — single WASM call via ferray batch
-    const outputPts = wasm.jacobian_eval_batch(Array.from(inputPts) as number[]);
+    const outputPts = wasm.jacobian_eval_batch(new Float64Array(inputPts));
 
     // Draw wireframe grids
     drawWireframe(ctx, inputPts, 0);
@@ -192,7 +197,7 @@
     const r = wasm.jacobian_det(1.5, 0.3, -.8);
     detVal = r;
     const j = wasm.jacobian_autodiff(3, -2, 1);
-    evalResult = `J(3, −2, 1) = [${j.slice(0, 3).map((v: number) => v.toFixed(4)).join(', ')}; ...]`;
+    evalResult = `J(3, −2, 1) = [${Array.from(j.slice(0, 3)).map((v) => v.toFixed(4)).join(', ')}; ...]`;
   }
 
   $effect(() => { sliceAxis; slicePos; gridSize; draw(); });

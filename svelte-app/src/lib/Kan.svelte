@@ -2,7 +2,11 @@
   import { onMount } from 'svelte';
   import type { WasmApi } from './wasm/loader';
 
-  let { wasm } = $props<{ wasm: WasmApi }>();
+  interface Props {
+    wasm: WasmApi;
+  }
+
+  let { wasm }: Props = $props();
 
   // ── configuration (changing these resets the network) ──
   let targetIdx = $state(0);
