@@ -9,11 +9,16 @@ permissions:
   pages: write
   id-token: write
 
+# Never let two deploys race each other.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install Rust
         run: |
@@ -21,7 +26,7 @@ jobs:
           rustup target add wasm32-unknown-unknown
 
       - name: Cache Rust build
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry
@@ -38,15 +43,18 @@ jobs:
           cargo build --target wasm32-unknown-unknown --release
           wasm-bindgen --target web --no-typescript --out-dir svelte-app/src/lib/wasm target/wasm32-unknown-unknown/release/ferray_wasm_poc.wasm
 
+      # pnpm must exist before setup-node so its `cache: 'pnpm'` can work.
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 11
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: '22'
+          # Single source of truth: .nvmrc at the repo root (keep CI and local
+          # development from drifting apart).
+          node-version-file: .nvmrc
           cache: 'pnpm'
           cache-dependency-path: svelte-app/pnpm-lock.yaml
 
@@ -59,13 +67,13 @@ jobs:
         working-directory: svelte-app
 
       - name: Setup Pages
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v6
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: svelte-app/dist
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
