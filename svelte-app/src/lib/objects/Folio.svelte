@@ -121,8 +121,9 @@
 	<div class="flex flex-wrap gap-1.5">
 		{#each SHAPES as shape, i (shape.id)}
 			<button
-				class="btn btn-sm preset-tonal-surface gap-1.5"
-				class:preset-filled-primary={selected === i}
+				class="btn btn-sm gap-1.5 {selected === i
+					? 'preset-filled-primary-500'
+					: 'preset-tonal-surface'}"
 				onclick={() => pick(i)}
 				aria-pressed={selected === i}
 			>
