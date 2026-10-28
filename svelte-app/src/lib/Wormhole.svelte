@@ -2,7 +2,11 @@
   import { onMount } from 'svelte';
   import type { WasmApi } from './wasm/loader';
 
-  let { wasm } = $props<{ wasm: WasmApi }>();
+  interface Props {
+    wasm: WasmApi;
+  }
+
+  let { wasm }: Props = $props();
 
   // ── shape ─
   let profile = $state(0);      // 0 Ellis catenoid, 1 Flamm paraboloid

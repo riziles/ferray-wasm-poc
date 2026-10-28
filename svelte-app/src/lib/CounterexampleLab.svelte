@@ -1,7 +1,12 @@
 <script lang="ts">
+  import type { WasmApi } from './wasm/loader';
   import { onMount } from 'svelte';
 
-  let { wasm } = $props<{ wasm: ReturnType<typeof import('./wasm/loader').getWasm> }>();
+  interface Props {
+    wasm: WasmApi;
+  }
+
+  let { wasm }: Props = $props();
 
   let p = $state({ a: 1.0, b: 1.0, c: 1.0, d: 3.0, e: 3.0, f: 2.0 });
   let score = $state({ mean: 0, std: 0, min: 0, max: 0, constancy: 0 });
@@ -19,7 +24,7 @@
 
   function runScore() {
     if (!wasm) return;
-    const params = [p.a, p.b, p.c, p.d, p.e, p.f];
+    const params = new Float64Array([p.a, p.b, p.c, p.d, p.e, p.f]);
     setTimeout(() => {
       const result = wasm.counterexample_score(params, 100);
       score = { mean: result[0], std: result[1], min: result[2], max: result[3],
@@ -31,7 +36,7 @@
     if (!wasm) return;
     searching = true; collisionResult = '';
     setTimeout(() => {
-      const params = [p.a, p.b, p.c, p.d, p.e, p.f];
+      const params = new Float64Array([p.a, p.b, p.c, p.d, p.e, p.f]);
       const r = wasm.counterexample_find_collision(params);
       if (r.length > 0) collisionResult = `COLLISION FOUND! dist=${r[6].toExponential(2)}\nP₁ = (${r[0].toFixed(4)}, ${r[1].toFixed(4)}, ${r[2].toFixed(4)})\nP₂ = (${r[3].toFixed(4)}, ${r[4].toFixed(4)}, ${r[5].toFixed(4)})`;
       else collisionResult = 'No collision found (30 Newton seeds)';
@@ -55,7 +60,7 @@
       if (cancelled || !autoSearching) return; autoIter++;
       const key = keys[Math.floor(Math.random() * keys.length)], oldVal = p[key];
       p[key] = Math.round((oldVal + (Math.random() - 0.5) * 0.2) * 10) / 10;
-      const r = wasm!.counterexample_score([p.a,p.b,p.c,p.d,p.e,p.f], 20);
+      const r = wasm!.counterexample_score(new Float64Array([p.a,p.b,p.c,p.d,p.e,p.f]), 20);
       const nc = 1 - Math.min(1, r[1] / (Math.abs(r[0]) + 0.001));
       if (nc > score.constancy + 0.001) { score = { mean: r[0], std: r[1], min: r[2], max: r[3], constancy: nc }; if (nc > autoBest) autoBest = nc; }
       else p[key] = oldVal;

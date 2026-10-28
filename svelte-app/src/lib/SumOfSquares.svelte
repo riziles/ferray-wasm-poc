@@ -1,5 +1,11 @@
 <script lang="ts">
-  let { wasm } = $props<{ wasm: ReturnType<typeof import('./wasm/loader').getWasm> }>();
+  import type { WasmApi } from './wasm/loader';
+
+  interface Props {
+    wasm: WasmApi;
+  }
+
+  let { wasm }: Props = $props();
 
   let input = $state('1, 2, 3, 4, 5');
   let result = $state('');

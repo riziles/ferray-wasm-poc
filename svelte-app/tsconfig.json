@@ -2,7 +2,12 @@
   "extends": "./.svelte-kit/tsconfig.json",
   "compilerOptions": {
     "allowJs": true,
-    "checkJs": true,
+    // src/lib/wasm/ferray_wasm_poc.js is wasm-bindgen output: generated,
+    // gitignored, and unannotated at module scope (its `wasm` binding is a bare
+    // `let`). Type-checking it produced 121 "implicitly any" errors that buried
+    // the handful of real ones. Reporting is off, but JSDoc is still parsed for
+    // inference, so the WasmApi surface in loader.ts stays fully typed.
+    "checkJs": false,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
