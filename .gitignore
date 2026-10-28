@@ -2,6 +2,9 @@
 /node_modules
 .playwright-cli/
 
+# cf CLI local cache (account ids) — not source
+/.cloudflare/
+
 # Generated WASM glue — built by CI and scripts/build-wasm.sh
 svelte-app/src/lib/wasm/ferray_wasm_poc.js
 svelte-app/src/lib/wasm/ferray_wasm_poc_bg.wasm
