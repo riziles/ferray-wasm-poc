@@ -1,13 +1,13 @@
 {
   "index": {
     "og:title": "Ferray \u00d7 WASM \u2014 Rust NumPy in the Browser",
-    "og:description": "10 interactive demos: FFT, Gaussian blur, Barbault Basket planetary chart, Jacobian conjecture counterexample, and more \u2014 all powered by Ferray compiled to WebAssembly.",
+    "og:description": "13 interactive demos: FFT, Gaussian blur, Barbault Basket planetary chart, Jacobian conjecture counterexample, an object folio with a catoid wrapped around it, and more \u2014 all powered by Ferray compiled to WebAssembly.",
     "og:image": "https://riziles.github.io/ferray-wasm-poc/og-image.png",
     "og:url": "https://riziles.github.io/ferray-wasm-poc/",
     "og:type": "website",
     "twitter:card": "summary_large_image",
     "twitter:title": "Ferray \u00d7 WASM \u2014 Rust NumPy in the Browser",
-    "twitter:description": "10 interactive demos powered by Ferray compiled to WebAssembly.",
+    "twitter:description": "13 interactive demos powered by Ferray compiled to WebAssembly.",
     "twitter:image": "https://riziles.github.io/ferray-wasm-poc/og-image.png"
   },
   "barbault-basket": {
@@ -53,5 +53,27 @@
     "twitter:title": "\ud83c\udf08 Quantum Chromodynamics \u2014 An Interactive Descent | Ferray \u00d7 WASM",
     "twitter:description": "The strong force, from 'quarks are held by springs' to 'the perturbation series does not converge'. Picture honesty: 78% \u2192 4%.",
     "twitter:image": "https://riziles.github.io/ferray-wasm-poc/og-qcd.png"
+  },
+  "objects": {
+    "og:title": "\ud83e\uddca Object Folio \u2014 Eight Three.js Objects and One Very Long Cat | Ferray \u00d7 WASM",
+    "og:description": "An interactive folio of torus knot, Klein bottle, M\u00f6bius strip, spherical harmonic and supershape \u2014 plus a catoid wrapped around them, with an animated tail and a Cheshire grin. Three.js + Threlte, four material presets.",
+    "og:image": "https://riziles.github.io/ferray-wasm-poc/og-objects.png",
+    "og:url": "https://riziles.github.io/ferray-wasm-poc/objects",
+    "og:type": "website",
+    "twitter:card": "summary_large_image",
+    "twitter:title": "\ud83e\uddca Object Folio \u2014 Eight Three.js Objects and One Very Long Cat",
+    "twitter:description": "Orbit, spin and wireframe eight Three.js shapes \u2014 and the catoid that laps them.",
+    "twitter:image": "https://riziles.github.io/ferray-wasm-poc/og-objects.png"
+  },
+  "notes/catoid": {
+    "og:title": "How to build a catoid \u2014 seventeen attempts | Ferray \u00d7 WASM",
+    "og:description": "The build log of one absurd 3D cat: a body that would not fit the frame, a grin that read as a zipper, an animated tail that allocates nothing, and the paws that placed themselves on the roof.",
+    "og:image": "https://riziles.github.io/ferray-wasm-poc/og-notes.png",
+    "og:url": "https://riziles.github.io/ferray-wasm-poc/notes/catoid",
+    "og:type": "article",
+    "twitter:card": "summary_large_image",
+    "twitter:title": "How to build a catoid \u2014 seventeen attempts",
+    "twitter:description": "The build log of one absurd 3D cat, with every failed attempt.",
+    "twitter:image": "https://riziles.github.io/ferray-wasm-poc/og-notes.png"
   }
 }
