@@ -1,0 +1,82 @@
+name: CI
+
+# Build-only verification. `deploy.yml` only runs on main, so without this a
+# broken toolchain bump would not be discovered until it was already merged
+# and live. Keep the build steps here in sync with deploy.yml.
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Rust
+        run: |
+          rustup update stable
+          rustup target add wasm32-unknown-unknown
+
+      - name: Cache Rust build
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
+
+      - name: Install wasm-bindgen-cli
+        run: which wasm-bindgen || cargo install wasm-bindgen-cli --version 0.2.126
+
+      - name: Build WASM
+        run: |
+          cargo build --target wasm32-unknown-unknown --release
+          wasm-bindgen --target web --no-typescript --out-dir svelte-app/src/lib/wasm target/wasm32-unknown-unknown/release/ferray_wasm_poc.wasm
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: 'pnpm'
+          cache-dependency-path: svelte-app/pnpm-lock.yaml
+
+      - name: Report toolchain versions
+        run: |
+          node -v
+          pnpm -v
+
+      - name: Install JS deps
+        run: pnpm install --frozen-lockfile
+        working-directory: svelte-app
+
+      - name: Build Svelte app
+        run: pnpm run build
+        working-directory: svelte-app
+
+      - name: Check every route prerendered
+        run: |
+          set -euo pipefail
+          cd svelte-app/dist
+          for f in index.html qcd.html fft.html wormhole.html kan.html barbault-basket.html; do
+            test -f "$f" || { echo "::error::missing $f"; exit 1; }
+          done
+          test -f og-qcd.png || { echo "::error::missing og-qcd.png"; exit 1; }
+          grep -q 'data-mode="dark"' index.html || { echo "::error::theme mode attribute missing"; exit 1; }
+          grep -q 'og:title' qcd.html || { echo "::error::OG tags not injected"; exit 1; }
+          echo "all routes + OG artifacts present"
