@@ -24,6 +24,23 @@
   <Hero />
 
   <section class="group/demo border border-primary-700/40 rounded-lg p-4 bg-primary-950/10">
+    <a href="{base}/objects" data-sveltekit-prefetch class="block hover:text-primary-400 transition-colors">
+      <h2 class="h2 mb-2 cursor-pointer">🧊 Object Folio <span class="badge preset-filled-primary-500 text-xs">NEW</span></h2>
+    </a>
+    <p class="text-sm text-surface-400 mb-3">
+      Eight interactive Three.js objects in one canvas — a torus knot, a Klein bottle, a Möbius
+      strip, a superformula star and friends. Orbit them, spin them, strip them to wireframe, or
+      read the maths behind each one. <span class="text-surface-500">(Three.js + Threlte — no WASM needed.)</span>
+    </p>
+    <div class="flex flex-wrap gap-2 text-xs">
+      <span class="badge preset-tonal">8 objects</span>
+      <span class="badge preset-tonal">4 materials</span>
+      <span class="badge preset-tonal">4 hand-built surfaces</span>
+      <a href="{base}/objects" data-sveltekit-prefetch class="badge preset-filled-primary-500">Open the folio →</a>
+    </div>
+  </section>
+
+  <section class="group/demo border border-primary-700/40 rounded-lg p-4 bg-primary-950/10">
     <a href="{base}/qcd" data-sveltekit-prefetch class="block hover:text-primary-400 transition-colors">
       <h2 class="h2 mb-2 cursor-pointer">🌈 Quantum Chromodynamics <span class="badge preset-filled-primary-500 text-xs">NEW</span></h2>
     </a>

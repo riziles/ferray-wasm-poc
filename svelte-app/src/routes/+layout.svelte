@@ -13,8 +13,11 @@
   setContext('wasm', () => wasm);
 
   // Some pages are pure TypeScript and must render even if the WASM build is
-  // missing or broken (e.g. the QCD explainer).
-  const wasmOptional = $derived(page.url.pathname.startsWith(base + '/qcd'));
+  // missing or broken (e.g. the QCD explainer, the Three.js folio).
+  const wasmOptionalRoutes = ['/qcd', '/objects'];
+  const wasmOptional = $derived(
+    wasmOptionalRoutes.some((route) => page.url.pathname.startsWith(base + route))
+  );
 
   onMount(async () => {
     try {
