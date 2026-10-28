@@ -25,14 +25,14 @@ export const CATOID_INDEX = -2;
 
 /** Piecewise-linear radius profile: neck → chest → belly → hips. */
 const BODY_PROFILE: [number, number][] = [
-	[0.0, 0.3],
-	[0.05, 0.46],
-	[0.14, 0.62],
-	[0.3, 0.58],
-	[0.5, 0.53],
-	[0.68, 0.5],
-	[0.84, 0.46],
-	[1.0, 0.36]
+	[0.0, 0.16],
+	[0.04, 0.24],
+	[0.12, 0.32],
+	[0.3, 0.29],
+	[0.5, 0.27],
+	[0.68, 0.25],
+	[0.84, 0.22],
+	[1.0, 0.17]
 ];
 
 function profileAt(profile: [number, number][], t: number): number {
@@ -53,26 +53,36 @@ export function bodyRadius(t: number): number {
 }
 
 /**
- * The body spine: a spiral that makes one and a half laps around the folio,
- * weaving in front of and behind the objects (the z term) so it reads as
- * wrapping the group rather than orbiting it.
+ * The body spine, authored by hand rather than by formula: the body laps the
+ * folio once, sitting *behind* it so the eight objects are never occluded, and
+ * only rides in the margins. The neck then rises out of that back plane at the
+ * head end and brings the head forward, below the bottom row.
+ *
+ * Order is head → neck → shoulder → around → hips (where the tail takes over).
  */
+const SPINE: [number, number, number][] = [
+	[2.2, -2.9, 2.2], // head anchor, in front of the folio
+	[1.7, -3.0, 0.7], // neck, crossing the plane
+	[0.3, -3.5, -1.3], // shoulders, behind
+	[-1.9, -3.75, -2.6],
+	[-6.2, -2.4, -2.9],
+	[-7.7, 1.2, -3.0],
+	[-5.2, 3.5, -2.9],
+	[-1.0, 4.15, -2.7],
+	[3.4, 3.6, -2.8],
+	[7.2, 1.0, -3.0],
+	[7.5, -2.0, -2.9],
+	[5.0, -3.4, -2.6],
+	[3.2, -3.6, -2.2] // hips
+];
+
 export function bodyCurve(): THREE.CatmullRomCurve3 {
-	const points: THREE.Vector3[] = [];
-	const steps = 26;
-
-	for (let i = 0; i <= steps; i++) {
-		const t = i / steps;
-		const theta = t * Math.PI * 2 * 1.55 - 0.1;
-		const rx = 6.6 + 0.5 * t;
-		const ry = 3.15 + 0.35 * t;
-		const z = 2.4 * Math.sin(2.5 * theta + 0.4) * (1 - 0.2 * t);
-		points.push(
-			new THREE.Vector3(Math.cos(theta) * rx, Math.sin(theta) * ry, z)
-		);
-	}
-
-	return new THREE.CatmullRomCurve3(points, false, 'catmullrom', 0.5);
+	return new THREE.CatmullRomCurve3(
+		SPINE.map(([x, y, z]) => new THREE.Vector3(x, y, z)),
+		false,
+		'catmullrom',
+		0.5
+	);
 }
 
 /**

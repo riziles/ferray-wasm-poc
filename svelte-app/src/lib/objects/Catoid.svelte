@@ -2,6 +2,7 @@
 	import { T } from '@threlte/core';
 	import { onDestroy } from 'svelte';
 	import * as THREE from 'three';
+	import CatHead from './CatHead.svelte';
 	import { CATOID_DEF, CATOID_INDEX, bodyCurve, bodyRadius, taperedTube } from './catoid';
 	import { materialFor, type MaterialKind } from './shapes';
 
@@ -17,13 +18,10 @@
 
 	const skin = $derived(materialFor(material, CATOID_DEF));
 
-	// Placeholder head: just enough to see where the neck starts and which way
-	// it points, until the real head lands.
+	// The head sits where the spine starts, turned to face the camera: a cat
+	// looking up at you from under the folio is the whole point of a grin.
 	const headPos = curve.getPointAt(0);
-	const headTangent = curve.getTangentAt(0).normalize();
-	const headQuat = new THREE.Quaternion()
-		.setFromUnitVectors(new THREE.Vector3(0, 0, 1), headTangent)
-		.toArray() as [number, number, number, number];
+	const headEuler = new THREE.Euler(-0.12, 0.16, 0.05).toArray() as [number, number, number];
 </script>
 
 <T.Group>
@@ -34,13 +32,11 @@
 		userData={{ shapeIndex: CATOID_INDEX }}
 	/>
 
-	<T.Mesh
+	<T.Group
 		position={headPos.toArray()}
-		quaternion={headQuat}
-		material={skin}
-		dispose={false}
+		rotation={headEuler}
 		userData={{ shapeIndex: CATOID_INDEX }}
 	>
-		<T.SphereGeometry args={[0.62, 32, 24]} />
-	</T.Mesh>
+		<CatHead {material} />
+	</T.Group>
 </T.Group>
