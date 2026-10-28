@@ -10,7 +10,7 @@ Twelve interactive demos running entirely in a ~900 KB WASM binary, plus one Thr
 
 | Demo | Crates used | Description |
 |---|---|---|
-| 🧊 Object Folio | — (Three.js + Threlte) | Eight interactive 3D objects in one canvas: torus knot, Klein bottle, Möbius strip, spherical harmonic, superformula star and friends — orbit, spin, four material presets |
+| 🧊 Object Folio | — (Three.js + Threlte) | Eight interactive 3D objects in one canvas: torus knot, Klein bottle, Möbius strip, spherical harmonic, superformula star and friends — orbit, spin, four material presets. Plus a catoid: one elongated cat wrapped around them, animated tail and Cheshire grin |
 | 🌈 Quantum Chromodynamics | — (pure TypeScript) | 9-act interactive descent into the strong force, with a per-section “picture honesty” score that decays from 78% to 4% |
 | 🌀 Wormhole Embedding Diagram | — (pure scalar Rust) | Interactive 3D Ellis/Flamm wormhole: weld morph, drag-orbit, throat traveler, flat annulus chart |
 | 🧠 Kolmogorov–Arnold Network | — (pure scalar Rust) | Live KAN training: B-spline edge functions fit 2D targets in-browser |

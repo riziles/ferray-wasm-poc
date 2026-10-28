@@ -103,8 +103,8 @@
 				<div
 					class="rounded-lg border border-surface-700 bg-surface-950/60 backdrop-blur px-3 py-2 text-xs text-surface-400"
 				>
-					<span class="text-surface-200 font-medium">Eight objects, one folio.</span>
-					Click any of them — or drag to orbit.
+					<span class="text-surface-200 font-medium">Eight objects, one folio, one cat.</span>
+					Click anything — or drag to orbit.
 				</div>
 			{/if}
 		</div>

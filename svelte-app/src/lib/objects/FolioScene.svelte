@@ -222,7 +222,11 @@
 <T.DirectionalLight position={[-4, 6, -3]} intensity={1.1} color="#ffd9a8" />
 
 {#if catoid}
-	<Catoid {material} />
+	<!-- The cat is authored for the wide 4 × 2 layout; on the tall 2 × 4 layout it
+	     shrinks so it still laps the group instead of running off the sides. -->
+	<T.Group scale={columns >= 4 ? 1 : 0.42}>
+		<Catoid {material} />
+	</T.Group>
 {/if}
 
 {#each layout as item, i (item.def.id)}
