@@ -4,6 +4,7 @@
 	import * as THREE from 'three';
 	import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 	import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+	import Catoid from './Catoid.svelte';
 	import FolioItem from './FolioItem.svelte';
 	import { SHAPES, type MaterialKind } from './shapes';
 
@@ -14,6 +15,7 @@
 		spread: number;
 		float: boolean;
 		autoRotate: boolean;
+		catoid: boolean;
 		selected: number | null;
 		resetToken: number;
 		/** Shape index, or -1 for "clicked empty space". */
@@ -28,6 +30,7 @@
 		spread,
 		float,
 		autoRotate,
+		catoid,
 		selected,
 		resetToken,
 		onselect,
@@ -211,6 +214,10 @@
 <T.DirectionalLight position={[5, 7, 9]} intensity={2.6} />
 <T.DirectionalLight position={[-7, -4, -6]} intensity={0.8} color="#8ab4ff" />
 <T.DirectionalLight position={[-4, 6, -3]} intensity={1.1} color="#ffd9a8" />
+
+{#if catoid}
+	<Catoid {material} />
+{/if}
 
 {#each layout as item, i (item.def.id)}
 	<FolioItem

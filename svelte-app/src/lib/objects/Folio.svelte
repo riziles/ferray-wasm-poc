@@ -2,6 +2,7 @@
 	import { Canvas } from '@threlte/core';
 	import * as THREE from 'three';
 	import FolioScene from './FolioScene.svelte';
+	import { CATOID_DEF, CATOID_INDEX } from './catoid';
 	import { SHAPES, type MaterialKind } from './shapes';
 
 	let host = $state<HTMLDivElement>();
@@ -12,13 +13,19 @@
 	let spread = $state(0);
 	let float = $state(true);
 	let autoRotate = $state(false);
+	let catoid = $state(true);
 	let material = $state<MaterialKind>('satin');
 	let selected = $state<number | null>(null);
 	let hovered = $state<number | null>(null);
 	let resetToken = $state(0);
 
-	const active = $derived(selected === null ? null : SHAPES[selected]);
-	const caption = $derived(active ?? (hovered === null ? null : SHAPES[hovered]));
+	function shapeInfo(index: number | null) {
+		if (index === null) return null;
+		return index === CATOID_INDEX ? CATOID_DEF : SHAPES[index];
+	}
+
+	const active = $derived(shapeInfo(selected));
+	const caption = $derived(active ?? shapeInfo(hovered));
 
 	const materials: { kind: MaterialKind; label: string }[] = [
 		{ kind: 'satin', label: 'satin' },
@@ -28,7 +35,9 @@
 	];
 
 	function pick(index: number) {
-		selected = index < 0 || selected === index ? null : index;
+		if (index === CATOID_INDEX) selected = selected === CATOID_INDEX ? null : CATOID_INDEX;
+		else if (index < 0) selected = null;
+		else selected = selected === index ? null : index;
 	}
 </script>
 
@@ -62,6 +71,7 @@
 				{spread}
 				{float}
 				{autoRotate}
+				{catoid}
 				{selected}
 				{resetToken}
 				onselect={pick}
@@ -147,12 +157,15 @@
 			<button class="btn preset-tonal-surface" onclick={() => (autoRotate = !autoRotate)}>
 				{autoRotate ? '🔄 orbit on' : '🔄 orbit off'}
 			</button>
+			<button class="btn preset-tonal-surface" onclick={() => (catoid = !catoid)}>
+				{catoid ? '🐈 catoid on' : '🐈 catoid off'}
+			</button>
 			<button class="btn preset-tonal-surface" onclick={() => (resetToken += 1)}>
 				↺ reset view
 			</button>
 			{#if selected !== null}
 				<button class="btn preset-tonal-surface" onclick={() => (selected = null)}>
-					✕ release {SHAPES[selected].name.toLowerCase()}
+					✕ release {active?.name.toLowerCase()}
 				</button>
 			{/if}
 		</div>
