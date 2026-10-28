@@ -28,8 +28,8 @@
 			const edge = Math.abs(u - 0.5) * 2; // 0 mid, 1 at the corners
 			return {
 				key: i,
-				x: Math.cos(angle) * 0.7,
-				y: Math.sin(angle) * 0.42 - 0.04,
+				x: Math.cos(angle) * 0.66,
+				y: Math.sin(angle) * 0.4 - 0.02,
 				rot: angle + Math.PI / 2,
 				w: 0.085 - edge * 0.03,
 				h: 0.17 - edge * 0.09
@@ -121,8 +121,13 @@
 	{/each}
 
 	<!-- the grin: a dark lip line with a row of glowing teeth over it -->
-	<T.Mesh position={[0, -0.04, 0.52]} scale={[1, 0.6, 1]} dispose={false}>
-		<T.TorusGeometry args={[0.7, 0.03, 10, 64, Math.PI * 0.88]} />
+	<T.Mesh
+		position={[0, -0.02, 0.52]}
+		rotation={[0, 0, Math.PI * 1.06]}
+		scale={[1, 0.61, 1]}
+		dispose={false}
+	>
+		<T.TorusGeometry args={[0.66, 0.032, 10, 64, Math.PI * 0.88]} />
 		<T.MeshStandardMaterial color="#1b0a14" roughness={0.5} />
 	</T.Mesh>
 

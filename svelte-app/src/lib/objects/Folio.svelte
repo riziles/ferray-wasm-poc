@@ -111,7 +111,7 @@
 
 		<!-- hint -->
 		<div
-			class="absolute bottom-2 left-3 text-[11px] text-surface-500 pointer-events-none select-none"
+			class="absolute bottom-2 right-3 text-[11px] text-surface-500 pointer-events-none select-none"
 		>
 			drag · orbit&nbsp;&nbsp;·&nbsp;&nbsp;scroll · zoom&nbsp;&nbsp;·&nbsp;&nbsp;click · inspect
 		</div>

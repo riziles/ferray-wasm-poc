@@ -3,7 +3,14 @@
 	import { onDestroy } from 'svelte';
 	import * as THREE from 'three';
 	import CatHead from './CatHead.svelte';
-	import { CATOID_DEF, CATOID_INDEX, bodyCurve, bodyRadius, taperedTube } from './catoid';
+	import {
+		CATOID_DEF,
+		CATOID_INDEX,
+		HEAD_ANCHOR,
+		bodyCurve,
+		bodyRadius,
+		taperedTube
+	} from './catoid';
 	import { materialFor, type MaterialKind } from './shapes';
 
 	interface Props {
@@ -20,8 +27,8 @@
 
 	// The head sits where the spine starts, turned to face the camera: a cat
 	// looking up at you from under the folio is the whole point of a grin.
-	const headPos = curve.getPointAt(0);
-	const headEuler = new THREE.Euler(-0.12, 0.16, 0.05).toArray() as [number, number, number];
+	const headPos = HEAD_ANCHOR;
+	const headEuler = new THREE.Euler(-0.05, 0.3, 0.12).toArray() as [number, number, number];
 </script>
 
 <T.Group>
@@ -35,6 +42,7 @@
 	<T.Group
 		position={headPos.toArray()}
 		rotation={headEuler}
+		scale={1.55}
 		userData={{ shapeIndex: CATOID_INDEX }}
 	>
 		<CatHead {material} />

@@ -53,32 +53,37 @@ export function bodyRadius(t: number): number {
 }
 
 /**
- * The body spine, authored by hand rather than by formula: the body laps the
- * folio once, sitting *behind* it so the eight objects are never occluded, and
- * only rides in the margins. The neck then rises out of that back plane at the
- * head end and brings the head forward, below the bottom row.
- *
- * Order is head → neck → shoulder → around → hips (where the tail takes over).
+ * Where the head sits: bottom-left, in front of the folio, looking at you.
+ * The spine starts here and dives back into the ring.
  */
-const SPINE: [number, number, number][] = [
-	[2.2, -2.9, 2.2], // head anchor, in front of the folio
-	[1.7, -3.0, 0.7], // neck, crossing the plane
-	[0.3, -3.5, -1.3], // shoulders, behind
-	[-1.9, -3.75, -2.6],
-	[-6.2, -2.4, -2.9],
-	[-7.7, 1.2, -3.0],
-	[-5.2, 3.5, -2.9],
-	[-1.0, 4.15, -2.7],
-	[3.4, 3.6, -2.8],
-	[7.2, 1.0, -3.0],
-	[7.5, -2.0, -2.9],
-	[5.0, -3.4, -2.6],
-	[3.2, -3.6, -2.2] // hips
-];
+export const HEAD_ANCHOR = new THREE.Vector3(-5.15, -1.85, 0.55);
 
+/**
+ * The body spine: a spiral that laps the folio 1.35 times, sitting *behind* it
+ * (z ≈ −2.8) so the eight objects are never occluded and the body only rides in
+ * the margins. The radius grows with t both to thicken the animal towards the
+ * hips and to keep the second lap outside the first instead of stacking on it.
+ *
+ * The head is not part of the spiral: it is prepended as a short neck, so the
+ * head's placement stays independent of the ring's geometry.
+ */
 export function bodyCurve(): THREE.CatmullRomCurve3 {
+	const steps = 44;
+	const theta0 = -2.35; // bottom-left
+	const ring: THREE.Vector3[] = [];
+
+	for (let i = 0; i <= steps; i++) {
+		const t = i / steps;
+		const theta = theta0 + t * Math.PI * 2 * 1.35;
+		const rx = (7.7 + 0.9 * t) * (1 + 0.03 * Math.sin(3 * theta + 0.6));
+		const ry = (3.95 + 0.5 * t) * (1 + 0.04 * Math.sin(2 * theta + 1.2));
+		ring.push(new THREE.Vector3(Math.cos(theta) * rx, Math.sin(theta) * ry, -2.8));
+	}
+
+	const neck = HEAD_ANCHOR.clone().lerp(ring[0], 0.45);
+
 	return new THREE.CatmullRomCurve3(
-		SPINE.map(([x, y, z]) => new THREE.Vector3(x, y, z)),
+		[HEAD_ANCHOR.clone(), neck, ...ring],
 		false,
 		'catmullrom',
 		0.5
