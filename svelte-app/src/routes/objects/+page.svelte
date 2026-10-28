@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { base } from '$app/paths';
 	import Folio from '$lib/objects/Folio.svelte';
 
 	const rustNote = `// The shapes are parametric surfaces: f(u, v) → (x, y, z).
@@ -175,6 +176,11 @@ updateTaperedTube(tailGeometry, spine, tailRadius, 72, 10);`;
 			</li>
 		</ul>
 		<pre class="code-block p-4 overflow-x-auto text-xs"><code>{catNote}</code></pre>
+		<p class="text-surface-300">
+			<a href="{base}/notes/catoid" class="text-primary-400 underline font-medium"
+				>The full build log, with every failed attempt →</a
+			>
+		</p>
 
 		<h3 class="h3 mt-4">Why Threlte?</h3>
 		<p class="text-surface-300">

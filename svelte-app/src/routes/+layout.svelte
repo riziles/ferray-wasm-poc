@@ -14,7 +14,7 @@
 
   // Some pages are pure TypeScript and must render even if the WASM build is
   // missing or broken (e.g. the QCD explainer, the Three.js folio).
-  const wasmOptionalRoutes = ['/qcd', '/objects'];
+  const wasmOptionalRoutes = ['/qcd', '/objects', '/notes'];
   const wasmOptional = $derived(
     wasmOptionalRoutes.some((route) => page.url.pathname.startsWith(base + route))
   );
