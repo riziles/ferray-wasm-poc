@@ -2,6 +2,7 @@
 	import { Canvas } from '@threlte/core';
 	import * as THREE from 'three';
 	import FolioScene from './FolioScene.svelte';
+	import { CATOID_DEF, CATOID_INDEX } from './catoid';
 	import { SHAPES, type MaterialKind } from './shapes';
 
 	let host = $state<HTMLDivElement>();
@@ -12,13 +13,19 @@
 	let spread = $state(0);
 	let float = $state(true);
 	let autoRotate = $state(false);
+	let catoid = $state(true);
 	let material = $state<MaterialKind>('satin');
 	let selected = $state<number | null>(null);
 	let hovered = $state<number | null>(null);
 	let resetToken = $state(0);
 
-	const active = $derived(selected === null ? null : SHAPES[selected]);
-	const caption = $derived(active ?? (hovered === null ? null : SHAPES[hovered]));
+	function shapeInfo(index: number | null) {
+		if (index === null) return null;
+		return index === CATOID_INDEX ? CATOID_DEF : SHAPES[index];
+	}
+
+	const active = $derived(shapeInfo(selected));
+	const caption = $derived(active ?? shapeInfo(hovered));
 
 	const materials: { kind: MaterialKind; label: string }[] = [
 		{ kind: 'satin', label: 'satin' },
@@ -28,7 +35,9 @@
 	];
 
 	function pick(index: number) {
-		selected = index < 0 || selected === index ? null : index;
+		if (index === CATOID_INDEX) selected = selected === CATOID_INDEX ? null : CATOID_INDEX;
+		else if (index < 0) selected = null;
+		else selected = selected === index ? null : index;
 	}
 </script>
 
@@ -62,6 +71,7 @@
 				{spread}
 				{float}
 				{autoRotate}
+				{catoid}
 				{selected}
 				{resetToken}
 				onselect={pick}
@@ -93,15 +103,15 @@
 				<div
 					class="rounded-lg border border-surface-700 bg-surface-950/60 backdrop-blur px-3 py-2 text-xs text-surface-400"
 				>
-					<span class="text-surface-200 font-medium">Eight objects, one folio.</span>
-					Click any of them — or drag to orbit.
+					<span class="text-surface-200 font-medium">Eight objects, one folio, one cat.</span>
+					Click anything — or drag to orbit.
 				</div>
 			{/if}
 		</div>
 
 		<!-- hint -->
 		<div
-			class="absolute bottom-2 left-3 text-[11px] text-surface-500 pointer-events-none select-none"
+			class="absolute bottom-2 right-3 text-[11px] text-surface-500 pointer-events-none select-none"
 		>
 			drag · orbit&nbsp;&nbsp;·&nbsp;&nbsp;scroll · zoom&nbsp;&nbsp;·&nbsp;&nbsp;click · inspect
 		</div>
@@ -147,12 +157,15 @@
 			<button class="btn preset-tonal-surface" onclick={() => (autoRotate = !autoRotate)}>
 				{autoRotate ? '🔄 orbit on' : '🔄 orbit off'}
 			</button>
+			<button class="btn preset-tonal-surface" onclick={() => (catoid = !catoid)}>
+				{catoid ? '🐈 catoid on' : '🐈 catoid off'}
+			</button>
 			<button class="btn preset-tonal-surface" onclick={() => (resetToken += 1)}>
 				↺ reset view
 			</button>
 			{#if selected !== null}
 				<button class="btn preset-tonal-surface" onclick={() => (selected = null)}>
-					✕ release {SHAPES[selected].name.toLowerCase()}
+					✕ release {active?.name.toLowerCase()}
 				</button>
 			{/if}
 		</div>

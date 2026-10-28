@@ -14,6 +14,14 @@ const klein = (u, v, out) => {
 
 parametric(klein, 120, 48);   // 121 × 49 rings → 11 520 quads`;
 
+	const catNote = `// catoid.ts — the tail's spine moves, so its buffers are rewritten in place
+const wave = Math.sin(time * 2.4 - w * 3.4) * 0.62 * w ** 1.6
+           + Math.sin(time * 1.1 - w * 1.7) * 0.22 * w;
+points[i].addScaledVector(normal, wave);      // amplitude grows towards the tip
+
+// same ring sweep as the body, no per-frame allocation
+updateTaperedTube(tailGeometry, spine, tailRadius, 72, 10);`;
+
 	const sceneNote = `<!-- FolioScene.svelte — the whole scene graph, declaratively -->
 <T.PerspectiveCamera makeDefault position={[0, 0.8, 13.2]} fov={40} />
 <T.AmbientLight intensity={0.45} />
@@ -29,7 +37,9 @@ parametric(klein, 120, 48);   // 121 × 49 rings → 11 520 quads`;
 	<h1 class="h1">🧊 Object Folio</h1>
 	<p class="text-lg text-surface-400">
 		Eight interactive Three.js objects in one canvas — knots, surfaces and solids you can
-		orbit, spin, strip down to wireframe, and inspect. Built with
+		orbit, spin, strip down to wireframe, and inspect. Plus one <strong>catoid</strong>: a cat
+		of no fixed length, wrapped around the lot, with a tail that never stops moving and a grin
+		that is doing most of the work. Built with
 		<a href="https://threlte.xyz" target="_blank" class="text-primary-400 underline">Threlte</a>,
 		which turns the Three.js scene graph into Svelte components.
 	</p>
@@ -130,6 +140,41 @@ parametric(klein, 120, 48);   // 121 × 49 rings → 11 520 quads`;
 			thirty lines:
 		</p>
 		<pre class="code-block p-4 overflow-x-auto text-xs"><code>{rustNote}</code></pre>
+
+		<h3 class="h3 mt-4">The catoid</h3>
+		<p class="text-surface-300">
+			The ninth inhabitant is not a folio shape: it is one animal, 1.55 laps long, whose body
+			runs <em>behind</em> the objects so nothing is ever hidden, and only rides the margins.
+			The neck rises out of that back plane, which is why the head can sit in front of the
+			bottom row, looking at you. Toggle it with the 🐈 button; it obeys the material presets
+			too, because a chrome cat is its own argument.
+		</p>
+		<ul class="list-disc list-inside text-surface-300 space-y-1">
+			<li>
+				<strong>Tapered tube.</strong> The body has to be thin at the neck and thick at the
+				chest, and <code class="code-block">TubeGeometry</code>'s radius is a constant, so
+				the body is a custom sweep: rings placed along the spine's Frenet frames, each one
+				scaled by a radius profile.
+			</li>
+			<li>
+				<strong>Animated tail.</strong> The tail's spine is a hand-placed rest pose plus a
+				travelling wave whose amplitude grows towards the tip — the base stays attached
+				while the end whips. Its geometry is built once and its position/normal buffers are
+				rewritten every frame, so the animation allocates nothing per tick.
+			</li>
+			<li>
+				<strong>The grin.</strong> Two <code class="code-block">RingGeometry</code> arcs in
+				the lower half of the face: a dark mouth, a slightly smaller white crescent on top,
+				then thin radial separators to cut it into thirteen teeth. Squashed vertically to
+				0.64. The first attempt was a row of loose boxes, which read as a zipper.
+			</li>
+			<li>
+				<strong>Vestigial paws</strong> are sampled off the body spine and kept only where it
+				runs low — placing them at fixed parameters put two paws on top of the ring, because
+				the spine laps more than once.
+			</li>
+		</ul>
+		<pre class="code-block p-4 overflow-x-auto text-xs"><code>{catNote}</code></pre>
 
 		<h3 class="h3 mt-4">Why Threlte?</h3>
 		<p class="text-surface-300">

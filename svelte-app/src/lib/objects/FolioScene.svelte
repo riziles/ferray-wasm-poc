@@ -4,6 +4,7 @@
 	import * as THREE from 'three';
 	import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 	import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+	import Catoid from './Catoid.svelte';
 	import FolioItem from './FolioItem.svelte';
 	import { SHAPES, type MaterialKind } from './shapes';
 
@@ -14,6 +15,7 @@
 		spread: number;
 		float: boolean;
 		autoRotate: boolean;
+		catoid: boolean;
 		selected: number | null;
 		resetToken: number;
 		/** Shape index, or -1 for "clicked empty space". */
@@ -28,6 +30,7 @@
 		spread,
 		float,
 		autoRotate,
+		catoid,
 		selected,
 		resetToken,
 		onselect,
@@ -130,8 +133,14 @@
 		raycaster.setFromCamera(pointer, cam);
 
 		for (const hit of raycaster.intersectObjects(scene.children, true)) {
-			const index = hit.object.userData?.shapeIndex;
-			if (typeof index === 'number') return index;
+			// Hits land on the leaf mesh, and the catoid's index lives on an
+			// ancestor group, so walk up until something answers.
+			let object: THREE.Object3D | null = hit.object;
+			while (object) {
+				const index = object.userData?.shapeIndex;
+				if (typeof index === 'number') return index;
+				object = object.parent;
+			}
 		}
 		return null;
 	}
@@ -211,6 +220,14 @@
 <T.DirectionalLight position={[5, 7, 9]} intensity={2.6} />
 <T.DirectionalLight position={[-7, -4, -6]} intensity={0.8} color="#8ab4ff" />
 <T.DirectionalLight position={[-4, 6, -3]} intensity={1.1} color="#ffd9a8" />
+
+{#if catoid}
+	<!-- The cat is authored for the wide 4 × 2 layout; on the tall 2 × 4 layout it
+	     shrinks so it still laps the group instead of running off the sides. -->
+	<T.Group scale={columns >= 4 ? 1 : 0.42}>
+		<Catoid {material} />
+	</T.Group>
+{/if}
 
 {#each layout as item, i (item.def.id)}
 	<FolioItem

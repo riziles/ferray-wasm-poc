@@ -284,7 +284,10 @@ export function geometryFor(def: ShapeDef, kind: MaterialKind = 'satin'): THREE.
  */
 const materialCache = new Map<string, THREE.Material>();
 
-export function materialFor(kind: MaterialKind, def: ShapeDef): THREE.Material {
+export function materialFor(
+	kind: MaterialKind,
+	def: { id: string; color: string; flat?: boolean }
+): THREE.Material {
 	const key = `${kind}:${def.id}`;
 	const cached = materialCache.get(key);
 	if (cached) return cached;
