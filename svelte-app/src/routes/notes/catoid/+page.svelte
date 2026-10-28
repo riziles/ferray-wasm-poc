@@ -2,8 +2,9 @@
 	import { base } from '$app/paths';
 
 	// Screenshots live in a public Cloudflare R2 bucket rather than in the repo:
-	// ~5 MB of PNGs has no business in git history.
-	const MEDIA = 'https://pub-13e5dc35a18844f0b981b44d29ba05b2.r2.dev';
+	// ~5 MB of PNGs has no business in git history. Served from a custom domain
+	// on the bucket (media.riziles.com), not the rate-limited r2.dev endpoint.
+	const MEDIA = 'https://media.riziles.com';
 
 	const commits = [
 		{
@@ -449,7 +450,8 @@ updateTaperedTube(tailGeometry, spine, tailRadius, 72, 10)`;
 		<p class="text-surface-300">
 			Roughly 5 MB of screenshots, which has no business in a git repository. They are in a
 			public Cloudflare R2 bucket (<code class="code-inline">ferray-wasm-poc-media</code>), served
-			from its <code class="code-inline">r2.dev</code> domain and loaded lazily here — the week's
+			from <code class="code-inline">media.riziles.com</code> — a custom domain on that bucket,
+			with Cloudflare's certificate and cache in front — and loaded lazily here — the week's
 			other write-up, on building the eight shapes, lives on the
 			<a href="{base}/objects" class="text-primary-400 underline">folio page itself</a>.
 		</p>
