@@ -94,8 +94,15 @@ runs:
           test -f "$f" || { echo "::error::missing $f"; exit 1; }
         done
         test -f og-qcd.png || { echo "::error::missing og-qcd.png"; exit 1; }
+        for img in og-objects.png og-notes.png; do
+          test -f "$img" || { echo "::error::missing $img"; exit 1; }
+        done
         grep -q 'data-mode="dark"' index.html \
           || { echo "::error::theme mode attribute missing"; exit 1; }
         grep -q 'og:title' qcd.html \
-          || { echo "::error::OG tags not injected"; exit 1; }
+          || { echo "::error::OG tags not injected (qcd)"; exit 1; }
+        grep -q 'og-objects.png' objects.html \
+          || { echo "::error::OG tags not injected (objects)"; exit 1; }
+        grep -q 'og-notes.png' notes/catoid.html \
+          || { echo "::error::OG tags not injected (notes/catoid)"; exit 1; }
         echo "all routes + OG artifacts present"

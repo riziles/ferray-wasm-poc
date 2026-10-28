@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#22102e"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#d4ff2a;stop-opacity:0.14"/>
+      <stop offset="100%" style="stop-color:#d4ff2a;stop-opacity:0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <ellipse cx="820" cy="380" rx="440" ry="290" fill="url(#glow)"/>
+
+  <text x="70" y="92" font-family="monospace" font-size="20" fill="#7dd3fc" letter-spacing="3">NOTES</text>
+  <text x="70" y="176" font-family="system-ui,sans-serif" font-weight="bold" font-size="58" fill="#e2e8f0">How to build a catoid</text>
+  <text x="70" y="222" font-family="system-ui,sans-serif" font-size="24" fill="#94a3b8">Seventeen attempts at one absurd 3D animal</text>
+  <text x="70" y="262" font-family="system-ui,sans-serif" font-size="24" fill="#94a3b8">— and the geometry that kept saying no.</text>
+
+  <text x="70" y="352" font-family="monospace" font-size="19" fill="#94a3b8">01 tubes too fat</text>
+  <text x="70" y="386" font-family="monospace" font-size="19" fill="#94a3b8">02 a hoop, not a cat</text>
+  <text x="70" y="420" font-family="monospace" font-size="19" fill="#94a3b8">03 the head that would not fit</text>
+  <text x="70" y="454" font-family="monospace" font-size="19" fill="#94a3b8">04 a grin that read as a zipper</text>
+  <text x="70" y="520" font-family="monospace" font-size="18" fill="#475569">19 screenshots · 5 commits · 1 draft PR</text>
+
+  <!-- the Cheshire grin on its own: no head, just the part that stayed -->
+  <g transform="translate(860,345)">
+    <ellipse cx="-74" cy="-96" rx="42" ry="33" fill="#d4ff2a"/>
+    <ellipse cx="74" cy="-96" rx="42" ry="33" fill="#d4ff2a"/>
+    <rect x="-79" y="-130" width="11" height="68" rx="5" fill="#05050a"/>
+    <rect x="68" y="-130" width="11" height="68" rx="5" fill="#05050a"/>
+
+    <path d="M-176,10 Q0,168 176,10" stroke="#160410" stroke-width="58" fill="none" stroke-linecap="round"/>
+    <path d="M-150,14 Q0,138 150,14" stroke="#fffdf3" stroke-width="34" fill="none" stroke-linecap="round"/>
+    <path d="M-126,17 L-126,47 M-96,36 L-96,66 M-66,49 L-66,79 M-36,57 L-36,87 M0,61 L0,91 M36,57 L36,87 M66,49 L66,79 M96,36 L96,66 M126,17 L126,47" stroke="#2a0714" stroke-width="6" fill="none" stroke-linecap="round"/>
+
+    <path d="M-186,4 L-236,-14 M-182,30 L-236,30 M-160,58 L-206,86
+             M186,4 L236,-14 M182,30 L236,30 M160,58 L206,86"
+          stroke="#f8fafc" stroke-width="3" opacity="0.7" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <text x="70" y="596" font-family="monospace" font-size="18" fill="#475569">riziles.github.io/ferray-wasm-poc/notes/catoid</text>
+</svg>
