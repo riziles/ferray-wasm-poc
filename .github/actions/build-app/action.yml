@@ -1,0 +1,101 @@
+name: Build app
+description: >
+  Build the Ferray WASM binary and the SvelteKit app, then assert that the
+  prerendered output is complete. Shared by ci.yml (verification) and
+  deploy.yml (publishing) so the two can never drift apart.
+
+# Note: every `run:` step in a composite action must declare `shell:`, and
+# paths inside the action resolve from github.workspace, not from a
+# `defaults.run.working-directory` set in the calling workflow.
+
+inputs:
+  wasm-bindgen-version:
+    description: wasm-bindgen-cli version (must match the wasm-bindgen crate in Cargo.lock)
+    required: false
+    default: '0.2.126'
+  pnpm-version:
+    description: pnpm major version
+    required: false
+    default: '11'
+
+runs:
+  using: composite
+  steps:
+    - name: Install Rust
+      shell: bash
+      run: |
+        rustup update stable
+        rustup target add wasm32-unknown-unknown
+
+    - name: Cache Rust build
+      uses: actions/cache@v6
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          ~/.cargo/bin
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
+
+    - name: Install wasm-bindgen-cli
+      shell: bash
+      run: which wasm-bindgen || cargo install wasm-bindgen-cli --version ${{ inputs.wasm-bindgen-version }}
+
+    - name: Build WASM
+      shell: bash
+      run: |
+        cargo build --target wasm32-unknown-unknown --release
+        wasm-bindgen --target web --no-typescript \
+          --out-dir svelte-app/src/lib/wasm \
+          target/wasm32-unknown-unknown/release/ferray_wasm_poc.wasm
+
+    # pnpm must exist before setup-node so its `cache: 'pnpm'` can work.
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v6
+      with:
+        version: ${{ inputs.pnpm-version }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v7
+      with:
+        # Single source of truth: .nvmrc at the repo root, so CI and local
+        # development cannot drift apart.
+        node-version-file: .nvmrc
+        cache: 'pnpm'
+        cache-dependency-path: svelte-app/pnpm-lock.yaml
+
+    - name: Report toolchain versions
+      shell: bash
+      run: |
+        node -v
+        pnpm -v
+        cargo -V
+        wasm-bindgen --version
+
+    - name: Install JS deps
+      shell: bash
+      working-directory: ${{ github.workspace }}/svelte-app
+      run: pnpm install --frozen-lockfile
+
+    - name: Build Svelte app
+      shell: bash
+      working-directory: ${{ github.workspace }}/svelte-app
+      run: pnpm run build
+
+    # A green build that silently stopped prerendering a route or dropping the
+    # OG tags would still deploy a broken site, so check the output we care
+    # about rather than trusting the exit code alone.
+    - name: Check prerendered output
+      shell: bash
+      working-directory: ${{ github.workspace }}/svelte-app/dist
+      run: |
+        set -euo pipefail
+        for f in index.html qcd.html fft.html wormhole.html kan.html barbault-basket.html; do
+          test -f "$f" || { echo "::error::missing $f"; exit 1; }
+        done
+        test -f og-qcd.png || { echo "::error::missing og-qcd.png"; exit 1; }
+        grep -q 'data-mode="dark"' index.html \
+          || { echo "::error::theme mode attribute missing"; exit 1; }
+        grep -q 'og:title' qcd.html \
+          || { echo "::error::OG tags not injected"; exit 1; }
+        echo "all routes + OG artifacts present"
