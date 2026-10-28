@@ -133,8 +133,14 @@
 		raycaster.setFromCamera(pointer, cam);
 
 		for (const hit of raycaster.intersectObjects(scene.children, true)) {
-			const index = hit.object.userData?.shapeIndex;
-			if (typeof index === 'number') return index;
+			// Hits land on the leaf mesh, and the catoid's index lives on an
+			// ancestor group, so walk up until something answers.
+			let object: THREE.Object3D | null = hit.object;
+			while (object) {
+				const index = object.userData?.shapeIndex;
+				if (typeof index === 'number') return index;
+				object = object.parent;
+			}
 		}
 		return null;
 	}

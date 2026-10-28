@@ -23,6 +23,55 @@ export const CATOID_DEF = {
 /** Index used in `userData.shapeIndex` for picking. */
 export const CATOID_INDEX = -2;
 
+/**
+ * The tail's rest pose: from the hips (behind the right margin), forward and
+ * under, then up the right margin and over the top. Points are hand-placed in
+ * the only band with room — outside the object columns, inside the frame.
+ */
+const TAIL_BASE: [number, number, number][] = [
+	[8.2, -0.6, -2.8],
+	[7.3, -2.4, -1.5],
+	[6.2, -3.5, -0.2],
+	[6.5, -2.4, 0.9],
+	[7.0, -0.4, 0.8],
+	[6.9, 1.6, 0.2],
+	[6.2, 3.1, -0.7]
+];
+
+export const TAIL_TUBULAR = 72;
+export const TAIL_RADIAL = 10;
+
+/** Tail thickness: thick where it leaves the hips, needle at the tip. */
+export function tailRadius(t: number): number {
+	return THREE.MathUtils.lerp(0.22, 0.06, t ** 0.8);
+}
+
+/**
+ * The animated tail spine. `time` advances a travelling wave down the tail; the
+ * amplitude grows towards the tip (w^1.6), so the base stays attached while the
+ * end whips. Displacement is along the local horizontal normal, which keeps the
+ * wave in the plane the tail is already sweeping through.
+ */
+export function tailCurve(time: number): THREE.CatmullRomCurve3 {
+	const points = TAIL_BASE.map(([x, y, z]) => new THREE.Vector3(x, y, z));
+	const count = points.length;
+	const up = new THREE.Vector3(0, 0, 1);
+
+	for (let i = 1; i < count; i++) {
+		const w = i / (count - 1);
+		const tangent = points[Math.min(i + 1, count - 1)].clone().sub(points[i - 1]).normalize();
+		const normal = new THREE.Vector3().crossVectors(tangent, up).normalize();
+		if (normal.lengthSq() < 1e-6) normal.set(1, 0, 0);
+
+		const wave =
+			Math.sin(time * 2.4 - w * 3.4) * 0.62 * w ** 1.6 +
+			Math.sin(time * 1.1 - w * 1.7) * 0.22 * w;
+		points[i].addScaledVector(normal, wave);
+	}
+
+	return new THREE.CatmullRomCurve3(points, false, 'catmullrom', 0.5);
+}
+
 /** Piecewise-linear radius profile: neck → chest → belly → hips. */
 const BODY_PROFILE: [number, number][] = [
 	[0.0, 0.16],

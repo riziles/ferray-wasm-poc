@@ -14,34 +14,37 @@
 
 	const skin = $derived(materialFor(material, CATOID_DEF));
 
-	// Wide, U-shaped grin: angles run from just past the left cheek, under the
-	// chin, up to just past the right cheek. Teeth are placed on that arc and
-	// rotated radially, and shrink towards the corners.
-	const GRIN_START = -Math.PI * 0.94;
-	const GRIN_END = -Math.PI * 0.06;
+	// The grin is a filled crescent, not a row of loose blocks: a dark ring
+	// (the mouth) with a slightly smaller white ring on top of it (the teeth),
+	// both drawn as `RingGeometry` arcs in the lower half of the face, then
+	// squashed vertically. Thin radial separators convert the white ring into
+	// individual teeth. Angles start at +x and sweep CCW, so the smile lives
+	// between ~190° and ~350°.
+	const GRIN_START = Math.PI * 1.04;
+	const GRIN_SWEEP = Math.PI * 0.92;
+	const TOOTH_COUNT = 13;
 
-	const teeth = $derived.by(() => {
-		const count = 21;
-		return Array.from({ length: count }, (_, i) => {
-			const u = i / (count - 1);
-			const angle = THREE.MathUtils.lerp(GRIN_START, GRIN_END, u);
-			const edge = Math.abs(u - 0.5) * 2; // 0 mid, 1 at the corners
+	const separators = $derived.by(() =>
+		Array.from({ length: TOOTH_COUNT + 1 }, (_, i) => {
+			const u = i / TOOTH_COUNT;
+			const angle = GRIN_START + u * GRIN_SWEEP;
 			return {
 				key: i,
-				x: Math.cos(angle) * 0.66,
-				y: Math.sin(angle) * 0.4 - 0.02,
-				rot: angle + Math.PI / 2,
-				w: 0.085 - edge * 0.03,
-				h: 0.17 - edge * 0.09
+				position: [Math.cos(angle) * 0.6, Math.sin(angle) * 0.6, 0.01] as [
+					number,
+					number,
+					number
+				],
+				rotation: [0, 0, angle + Math.PI / 2] as [number, number, number]
 			};
-		});
-	});
+		})
+	);
 
 	const whiskers = $derived(
 		[-1, 1].flatMap((side) =>
-			[-0.28, 0, 0.28].map((tilt, i) => ({
+			[-0.22, 0, 0.22].map((tilt, i) => ({
 				key: `${side}-${i}`,
-				position: [side * 0.34, -0.06 + tilt * 0.35, 0.44] as [number, number, number],
+				position: [side * 0.33, 0.02 + tilt * 0.3, 0.46] as [number, number, number],
 				rotation: [0, 0, side * (Math.PI / 2 - tilt)] as [number, number, number]
 			}))
 		)
@@ -71,11 +74,11 @@
 			<T.ConeGeometry args={[0.24, 0.46, 24]} />
 		</T.Mesh>
 		<T.Mesh
-			position={[side * 0.37, 0.47, 0.1]}
+			position={[side * 0.35, 0.4, 0.14]}
 			rotation={[0, 0, -side * 0.34]}
 			dispose={false}
 		>
-			<T.ConeGeometry args={[0.14, 0.3, 20]} />
+			<T.ConeGeometry args={[0.11, 0.2, 20]} />
 			<T.MeshStandardMaterial color="#f9a8d4" roughness={0.6} />
 		</T.Mesh>
 	{/each}
@@ -85,7 +88,7 @@
 		<T.Mesh
 			position={[side * 0.26, 0.14, 0.44]}
 			scale={[1, 0.78, 0.62]}
-			rotation={[0, 0, side * -0.12]}
+			rotation={[0, 0, side * -0.2]}
 			dispose={false}
 		>
 			<T.SphereGeometry args={[0.19, 28, 20]} />
@@ -120,30 +123,28 @@
 		</T.Mesh>
 	{/each}
 
-	<!-- the grin: a dark lip line with a row of glowing teeth over it -->
-	<T.Mesh
-		position={[0, -0.02, 0.52]}
-		rotation={[0, 0, Math.PI * 1.06]}
-		scale={[1, 0.61, 1]}
-		dispose={false}
-	>
-		<T.TorusGeometry args={[0.66, 0.032, 10, 64, Math.PI * 0.88]} />
-		<T.MeshStandardMaterial color="#1b0a14" roughness={0.5} />
-	</T.Mesh>
+	<!-- the grin: dark mouth crescent, white crescent, radial tooth gaps -->
+	<T.Group position={[0, -0.03, 0.5]} scale={[1, 0.64, 1]}>
+		<T.Mesh dispose={false}>
+			<T.RingGeometry args={[0.42, 0.86, 64, 1, GRIN_START, GRIN_SWEEP]} />
+			<T.MeshStandardMaterial color="#160410" roughness={0.5} />
+		</T.Mesh>
 
-	{#each teeth as tooth (tooth.key)}
-		<T.Mesh
-			position={[tooth.x, tooth.y, 0.53]}
-			rotation={[0, 0, tooth.rot]}
-			dispose={false}
-		>
-			<T.BoxGeometry args={[tooth.w, tooth.h, 0.05]} />
+		<T.Mesh position={[0, 0, 0.012]} dispose={false}>
+			<T.RingGeometry args={[0.455, 0.8, 64, 1, GRIN_START, GRIN_SWEEP]} />
 			<T.MeshStandardMaterial
-				color="#fdfcf5"
-				emissive="#fff8e1"
-				emissiveIntensity={0.75}
-				roughness={0.28}
+				color="#fffdf3"
+				emissive="#fff3c4"
+				emissiveIntensity={0.7}
+				roughness={0.25}
 			/>
 		</T.Mesh>
-	{/each}
+
+		{#each separators as sep (sep.key)}
+			<T.Mesh position={sep.position} rotation={sep.rotation} dispose={false}>
+				<T.BoxGeometry args={[0.016, 0.3, 0.02]} />
+				<T.MeshStandardMaterial color="#2a0714" roughness={0.6} />
+			</T.Mesh>
+		{/each}
+	</T.Group>
 </T.Group>
