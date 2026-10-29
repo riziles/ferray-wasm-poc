@@ -49,6 +49,30 @@ runs:
           --out-dir svelte-app/src/lib/wasm \
           target/wasm32-unknown-unknown/release/ferray_wasm_poc.wasm
 
+    # A module containing one relaxed-SIMD instruction is rejected at *validation*
+    # time by engines that lack the proposal — the whole binary fails to load, no
+    # fallback path is reached. WebKit (every browser on iOS) is in that position,
+    # and the symptom is a WASM Init Failed card on an iPhone rather than a red
+    # build. The feature sneaks back in through a dependency's default features,
+    # so assert on the artifact itself, not on the manifest.
+    - name: Assert WASM needs no relaxed SIMD
+      shell: bash
+      run: |
+        set -euo pipefail
+        wasm=svelte-app/src/lib/wasm/ferray_wasm_poc_bg.wasm
+        # The `target_features` section encodes each entry as '+' <len> <name>,
+        # so match the bare name. `simd128` is the positive control: if neither
+        # string is found the section is missing and this check means nothing.
+        if ! grep -aq 'simd128' "$wasm"; then
+          echo "::error file=$wasm::no target_features section found — cannot verify SIMD requirements"
+          exit 1
+        fi
+        if grep -aq 'relaxed-simd' "$wasm"; then
+          echo "::error file=$wasm::WASM requires relaxed-simd, which WebKit (every browser on iOS) does not implement — the module is rejected at validation time and never loads. Fix at source: stop enabling pulp's default features in ferray-riz-dev."
+          exit 1
+        fi
+        echo "OK: WASM declares simd128 but no relaxed-simd"
+
     # pnpm must exist before setup-node so its `cache: 'pnpm'` can work.
     - name: Setup pnpm
       uses: pnpm/action-setup@v6
