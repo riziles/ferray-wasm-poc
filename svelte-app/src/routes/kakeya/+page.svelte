@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import NeedlePuzzle from '$lib/kakeya/NeedlePuzzle.svelte';
+  import PerronDemo from '$lib/kakeya/PerronDemo.svelte';
 
   let scroll = $state(0);
 
@@ -56,5 +57,18 @@
       for you — it places the needle as deep inside the shape as it can.
     </p>
     <NeedlePuzzle />
+  </section>
+
+  <section class="space-y-4">
+    <h2 class="h2">2. The room can have no area at all</h2>
+    <p class="text-surface-300">
+      In 1919 Abram Besicovitch was working on a problem about integrals and needed a set that
+      contains a unit segment in every direction but has arbitrarily small area. It should be
+      impossible; it is not. Perron's version of the construction is a tree: cut a triangle into
+      pieces that all keep their apex on the same line, then slide neighbouring pieces over each
+      other. Every piece still holds a unit needle for its own direction — and the pieces overlap
+      more and more.
+    </p>
+    <PerronDemo />
   </section>
 </div>
