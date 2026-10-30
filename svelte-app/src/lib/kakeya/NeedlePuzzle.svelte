@@ -4,7 +4,7 @@
 // and the one that fails hardest is not the smallest.
 
 import { onMount } from 'svelte';
-import { diskPoly, equilateralPoly, rectPoly, rasterize, boxOf, padBox, cellSize } from './geom';
+import { diskPoly, equilateralPoly, rectPoly, rasterize, boxOf, padBox, cellSize, squareBox } from './geom';
 import { deepestPlacement, distanceField, needleInside } from './figure';
 import { INK, clear, clamp, fit, fmt, tracePoly, viewFor } from './util';
 import type { Box, Poly } from './geom';
@@ -100,7 +100,7 @@ function prepared() {
 	const r = region();
 	let hit = cache.get(r.id);
 	if (!hit) {
-		const box = padBox(boxOf(r.polys), 0.02);
+		const box = squareBox(padBox(boxOf(r.polys), 0.02));
 		const set = rasterize(r.polys, 640, box);
 		hit = { set, sdf: distanceField(set), box };
 		cache.set(r.id, hit);

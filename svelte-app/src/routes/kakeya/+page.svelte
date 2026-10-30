@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import NeedlePuzzle from '$lib/kakeya/NeedlePuzzle.svelte';
   import PerronDemo from '$lib/kakeya/PerronDemo.svelte';
+  import DimensionDemo from '$lib/kakeya/DimensionDemo.svelte';
 
   let scroll = $state(0);
 
@@ -70,5 +71,17 @@
       more and more.
     </p>
     <PerronDemo />
+  </section>
+
+  <section class="space-y-4">
+    <h2 class="h2">3. So stop asking about area</h2>
+    <p class="text-surface-300">
+      Besicovitch had solved Kakeya's question and made it useless: if the area can be anything,
+      area is not the measurement to make. The <strong>Kakeya conjecture</strong> replaces it with a
+      dimension. Cover the set with boxes of side δ, count how many are needed, and the growth rate
+      N(δ) ≈ δ<sup>−d</sup> defines d. A set of zero area can still fill boxes as eagerly as a solid
+      region; the conjecture says that in n dimensions a Kakeya set always does, so d = n.
+    </p>
+    <DimensionDemo />
   </section>
 </div>

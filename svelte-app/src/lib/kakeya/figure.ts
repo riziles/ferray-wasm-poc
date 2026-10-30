@@ -7,6 +7,7 @@
 import {
 	boxOf,
 	rasterize,
+	squareBox,
 	signedDistance,
 	type CellSet,
 	sampleDist,
@@ -97,7 +98,7 @@ export function rotationalUnion(
 
 /** Raster of a plain polygon set, at `outN` cells across its own bounding box. */
 export function polysToRaster(polys: Poly[], outN: number, pad = 0.02): Raster {
-	return rasterize(polys, outN, expand(boxOf(polys), pad));
+	return rasterize(polys, outN, squareBox(expand(boxOf(polys), pad)));
 }
 
 function expand(b: Box, pad: number): Box {

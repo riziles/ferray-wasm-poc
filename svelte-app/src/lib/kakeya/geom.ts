@@ -39,6 +39,14 @@ export function boxOf(polys: Poly[], pad = 0): Box {
 	return { x0: x0 - pad, y0: y0 - pad, x1: x1 + pad, y1: y1 + pad };
 }
 
+/** Grow the shorter side so the box is square: keeps grid cells isotropic. */
+export function squareBox(b: Box): Box {
+	const side = Math.max(b.x1 - b.x0, b.y1 - b.y0);
+	const cx = (b.x0 + b.x1) / 2;
+	const cy = (b.y0 + b.y1) / 2;
+	return { x0: cx - side / 2, y0: cy - side / 2, x1: cx + side / 2, y1: cy + side / 2 };
+}
+
 export function padBox(b: Box, pad: number): Box {
 	return { x0: b.x0 - pad, y0: b.y0 - pad, x1: b.x1 + pad, y1: b.y1 + pad };
 }
@@ -184,7 +192,7 @@ export function cellSize(r: CellSet): number {
 }
 
 /** Number of occupied cells when the grid is coarsened by a factor `k`. */
-export function boxCount(r: Raster, k: number): number {
+export function boxCount(r: CellSet, k: number): number {
 	const m = Math.floor(r.n / k);
 	let count = 0;
 	for (let bj = 0; bj < m; bj++) {
@@ -206,7 +214,7 @@ export function boxCount(r: Raster, k: number): number {
 }
 
 /** Least-squares slope of log N(δ) against log(1/δ): the box-counting dimension. */
-export function boxDimension(r: Raster, ks: number[]): { slope: number; points: [number, number][] } {
+export function boxDimension(r: CellSet, ks: number[]): { slope: number; points: [number, number][] } {
 	const points = ks.map((k) => {
 		const nb = Math.floor(r.n / k);
 		const delta = (r.box.x1 - r.box.x0) / nb;
