@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1b1030"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#38bdf8;stop-opacity:0.16"/>
+      <stop offset="100%" stop-color="#38bdf8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="clip" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#0b1020"/>
+      <stop offset="100%" style="stop-color:#0b1020" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <text x="70" y="96" font-family="system-ui,sans-serif" font-weight="bold" font-size="50" fill="#e2e8f0">The Exponential Time</text>
+  <text x="70" y="150" font-family="system-ui,sans-serif" font-weight="bold" font-size="50" fill="#e2e8f0">Hypothesis is false</text>
+  <text x="70" y="192" font-family="system-ui,sans-serif" font-size="23" fill="#94a3b8">…and it is only barely false: the exponent chart, the thread, and what breaks</text>
+
+  <ellipse cx="300" cy="430" rx="300" ry="200" fill="url(#glow)"/>
+
+  <!-- the exponent chart: brute force at 1, three descending bounds -->
+  <g transform="translate(80,250)">
+    <line x1="0" y1="290" x2="470" y2="290" stroke="#334155" stroke-width="2"/>
+    <line x1="0" y1="290" x2="0" y2="10" stroke="#334155" stroke-width="2"/>
+
+    <!-- brute force reference -->
+    <line x1="0" y1="42" x2="466" y2="42" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="3 5" stroke-opacity="0.75"/>
+    <text x="380" y="34" font-family="monospace" font-size="14" fill="#94a3b8">brute force 2ⁿ</text>
+
+    <!-- best 3-SAT decider -->
+    <line x1="0" y1="140" x2="466" y2="140" stroke="#64748b" stroke-width="1" stroke-dasharray="6 6" stroke-opacity="0.5"/>
+
+    <!-- abstract: 1/sqrt(log n) -->
+    <path d="M6,20 C60,120 130,196 210,228 C290,258 380,272 466,279" fill="none" stroke="#38bdf8" stroke-width="4" stroke-linecap="round"/>
+    <!-- Theorem 1.1: loglog/sqrt -->
+    <path d="M6,60 C70,132 150,158 230,170 C310,181 400,188 466,191" fill="none" stroke="#4ade80" stroke-width="4" stroke-linecap="round"/>
+    <!-- Lean: (loglog)^2/sqrt, above brute force and rising out of frame -->
+    <path d="M6,140 C70,64 140,26 210,14" fill="none" stroke="#fbbf24" stroke-width="4" stroke-linecap="round" stroke-dasharray="10 7"/>
+
+    <text x="150" y="300" font-family="monospace" font-size="14" fill="#64748b">log n →</text>
+    <text x="-34" y="20" font-family="monospace" font-size="14" fill="#64748b">α</text>
+    <text x="352" y="262" font-family="monospace" font-size="13" fill="#38bdf8">abstract</text>
+    <text x="352" y="182" font-family="monospace" font-size="13" fill="#4ade80">Thm 1.1</text>
+    <text x="196" y="6" font-family="monospace" font-size="13" fill="#fbbf24">Lean: above 2ⁿ until 10²³⁹⁰</text>
+  </g>
+
+  <!-- the thread -->
+  <g transform="translate(600,258)">
+    <rect x="0" y="0" width="530" height="150" rx="14" fill="#111c33" stroke="#1e40af" stroke-width="2"/>
+    <circle cx="30" cy="30" r="9" fill="#38bdf8"/>
+    <text x="48" y="35" font-family="monospace" font-size="15" fill="#7dd3fc">@moultano.bsky.social</text>
+    <text x="404" y="35" font-family="monospace" font-size="13" fill="#64748b">27 Oct 2026</text>
+    <text x="26" y="76" font-family="system-ui,sans-serif" font-size="21" fill="#e2e8f0">“3 SAT in sub exponential time just</text>
+    <text x="26" y="106" font-family="system-ui,sans-serif" font-size="21" fill="#e2e8f0">seems absurd to me. I never would</text>
+    <text x="26" y="136" font-family="system-ui,sans-serif" font-size="21" fill="#e2e8f0">have thought that was true.”</text>
+  </g>
+
+  <g transform="translate(600,432)">
+    <rect x="0" y="0" width="530" height="118" rx="14" fill="#141a2e" stroke="#334155" stroke-width="2"/>
+    <circle cx="30" cy="30" r="9" fill="#c084fc"/>
+    <text x="48" y="35" font-family="monospace" font-size="15" fill="#c084fc">@moultano.bsky.social</text>
+    <text x="26" y="76" font-family="system-ui,sans-serif" font-size="19" fill="#cbd5e1">“it isn't just that some boolean circuits have</text>
+    <text x="26" y="102" font-family="system-ui,sans-serif" font-size="19" fill="#cbd5e1">structure — it's that they *all* do.”</text>
+  </g>
+
+  <text x="70" y="576" font-family="monospace" font-size="15" fill="#94a3b8">deterministic #k-SAT in 2^(n/(log n)^(1/2+o(1))) · Lean formalisation · two live panels</text>
+  <text x="1130" y="612" text-anchor="end" font-family="monospace" font-size="15" fill="#7c8ba1">riziles.github.io/ferray-wasm-poc/eth</text>
+</svg>
