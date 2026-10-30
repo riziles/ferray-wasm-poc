@@ -24,6 +24,25 @@
   <Hero />
 
   <section class="group/demo border border-primary-700/40 rounded-lg p-4 bg-primary-950/10">
+    <a href="{base}/kakeya" data-sveltekit-prefetch class="block hover:text-primary-400 transition-colors">
+      <h2 class="h2 mb-2 cursor-pointer">🪡 The Kakeya Conjecture <span class="badge preset-filled-primary-500 text-xs">NEW</span></h2>
+    </a>
+    <p class="text-sm text-surface-400 mb-3">
+      Five live experiments on the needle problem: turn a unit needle in four rooms, slide a Perron
+      tree until its area vanishes, count boxes to measure the dimension yourself, compress a family
+      of tubes, and focus a wave. Then the honest ledger on OpenAI's October 2026 claim that its
+      models proved local smoothing — and with it Kakeya — in every dimension.
+      <span class="text-surface-500">(Pure TypeScript — no WASM needed.)</span>
+    </p>
+    <div class="flex flex-wrap gap-2 text-xs">
+      <span class="badge preset-tonal">5 interactive demos</span>
+      <span class="badge preset-tonal">measured, not quoted</span>
+      <span class="badge preset-tonal-warning">claims marked as claims</span>
+      <a href="{base}/kakeya" data-sveltekit-prefetch class="badge preset-filled-primary-500">Turn the needle →</a>
+    </div>
+  </section>
+
+  <section class="group/demo border border-primary-700/40 rounded-lg p-4 bg-primary-950/10">
     <a href="{base}/objects" data-sveltekit-prefetch class="block hover:text-primary-400 transition-colors">
       <h2 class="h2 mb-2 cursor-pointer">🧊 Object Folio <span class="badge preset-filled-primary-500 text-xs">NEW</span></h2>
     </a>

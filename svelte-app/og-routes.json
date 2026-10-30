@@ -1,13 +1,13 @@
 {
   "index": {
     "og:title": "Ferray \u00d7 WASM \u2014 Rust NumPy in the Browser",
-    "og:description": "13 interactive demos: FFT, Gaussian blur, Barbault Basket planetary chart, Jacobian conjecture counterexample, an object folio with a catoid wrapped around it, and more \u2014 all powered by Ferray compiled to WebAssembly.",
+    "og:description": "14 interactive demos: FFT, Gaussian blur, Barbault Basket planetary chart, an object folio with a catoid wrapped around it, an interactive Kakeya explainer, and more \u2014 all powered by Ferray compiled to WebAssembly.",
     "og:image": "https://riziles.github.io/ferray-wasm-poc/og-image.png",
     "og:url": "https://riziles.github.io/ferray-wasm-poc/",
     "og:type": "website",
     "twitter:card": "summary_large_image",
     "twitter:title": "Ferray \u00d7 WASM \u2014 Rust NumPy in the Browser",
-    "twitter:description": "13 interactive demos powered by Ferray compiled to WebAssembly.",
+    "twitter:description": "14 interactive demos powered by Ferray compiled to WebAssembly.",
     "twitter:image": "https://riziles.github.io/ferray-wasm-poc/og-image.png"
   },
   "barbault-basket": {
@@ -75,5 +75,16 @@
     "twitter:title": "How to build a catoid \u2014 seventeen attempts",
     "twitter:description": "The build log of one absurd 3D cat, with every failed attempt.",
     "twitter:image": "https://riziles.github.io/ferray-wasm-poc/og-notes.png"
+  },
+  "kakeya": {
+    "og:title": "\ud83e\udea1 The Kakeya Conjecture \u2014 A Needle, Zero Area, and a Proof an AI Claims | Ferray \u00d7 WASM",
+    "og:description": "Five live experiments on the Kakeya problem: turn a unit needle in four rooms, watch Perron trees shrink to zero area, count boxes to measure the dimension, compress tubes, and focus a wave. Then the honest ledger on OpenAI's October 2026 local-smoothing claim.",
+    "og:image": "https://riziles.github.io/ferray-wasm-poc/og-kakeya.png",
+    "og:url": "https://riziles.github.io/ferray-wasm-poc/kakeya",
+    "og:type": "article",
+    "twitter:card": "summary_large_image",
+    "twitter:title": "\ud83e\udea1 The Kakeya Conjecture \u2014 five live experiments",
+    "twitter:description": "A needle, a room of zero area, and the proof OpenAI says its models found \u2014 measured, not quoted.",
+    "twitter:image": "https://riziles.github.io/ferray-wasm-poc/og-kakeya.png"
   }
 }
