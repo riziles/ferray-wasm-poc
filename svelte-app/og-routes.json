@@ -86,5 +86,16 @@
     "twitter:title": "\ud83e\udea1 The Kakeya Conjecture \u2014 five live experiments",
     "twitter:description": "A needle, a room of zero area, and the proof OpenAI says its models found \u2014 measured, not quoted.",
     "twitter:image": "https://riziles.github.io/ferray-wasm-poc/og-kakeya.png"
+  },
+  "kakeya/proof": {
+    "og:title": "\ud83d\udd2c Inside the Proof \u2014 Local Smoothing in Every Dimension | Ferray \u00d7 WASM",
+    "og:description": "Reading notes on OpenAI's local smoothing preprint: the imaginary-time direction filter, a conserved current built from two flows, a quaternionic Monge\u2013Amp\u00e8re energy, and why the loss is exactly log\u00b2(2+N). Four live models of the machinery.",
+    "og:image": "https://riziles.github.io/ferray-wasm-poc/og-kakeya-proof.png",
+    "og:url": "https://riziles.github.io/ferray-wasm-poc/kakeya/proof",
+    "og:type": "article",
+    "twitter:card": "summary_large_image",
+    "twitter:title": "\ud83d\udd2c Inside the Proof \u2014 how local smoothing was attacked",
+    "twitter:description": "The mechanics of the OpenAI preprint, quoted by section, with four live models. Where the log\u00b2 comes from, and why 2n/(n\u22121) falls out of a determinant.",
+    "twitter:image": "https://riziles.github.io/ferray-wasm-poc/og-kakeya-proof.png"
   }
 }

@@ -90,11 +90,11 @@ runs:
       working-directory: ${{ github.workspace }}/svelte-app/dist
       run: |
         set -euo pipefail
-        for f in index.html qcd.html fft.html wormhole.html kan.html barbault-basket.html objects.html kakeya.html; do
+        for f in index.html qcd.html fft.html wormhole.html kan.html barbault-basket.html objects.html kakeya.html kakeya/proof.html; do
           test -f "$f" || { echo "::error::missing $f"; exit 1; }
         done
         test -f og-qcd.png || { echo "::error::missing og-qcd.png"; exit 1; }
-        for img in og-objects.png og-notes.png og-kakeya.png; do
+        for img in og-objects.png og-notes.png og-kakeya.png og-kakeya-proof.png; do
           test -f "$img" || { echo "::error::missing $img"; exit 1; }
         done
         grep -q 'data-mode="dark"' index.html \
@@ -107,4 +107,6 @@ runs:
           || { echo "::error::OG tags not injected (notes/catoid)"; exit 1; }
         grep -q 'og-kakeya.png' kakeya.html \
           || { echo "::error::OG tags not injected (kakeya)"; exit 1; }
+        grep -q 'og-kakeya-proof.png' kakeya/proof.html \
+          || { echo "::error::OG tags not injected (kakeya/proof)"; exit 1; }
         echo "all routes + OG artifacts present"
