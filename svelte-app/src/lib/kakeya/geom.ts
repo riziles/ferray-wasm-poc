@@ -16,6 +16,9 @@ export interface Box {
 	y1: number;
 }
 
+/** Anything that behaves like a raster: the box-counting and distance code only needs these three fields. */
+export type CellSet = Pick<Raster, 'n' | 'box' | 'cell'>;
+
 /** A square grid of cells covering `box`. `cell[j * n + i]` is 1 when occupied. */
 export interface Raster {
 	n: number;

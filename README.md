@@ -6,11 +6,12 @@ A signal processing and mathematical demo using [Ferray](https://github.com/doll
 
 ## Demos
 
-Twelve interactive demos running entirely in a ~900 KB WASM binary, plus one Three.js page that needs no Rust at all:
+Twelve interactive demos running entirely in a ~900 KB WASM binary, plus pages that need no Rust at all (the object folio, the QCD descent, the Kakeya explainer):
 
 | Demo | Crates used | Description |
 |---|---|---|
 | 🧊 Object Folio | — (Three.js + Threlte) | Eight interactive 3D objects in one canvas: torus knot, Klein bottle, Möbius strip, spherical harmonic, superformula star and friends — orbit, spin, four material presets. Plus a catoid: one elongated cat wrapped around them, animated tail and Cheshire grin |
+| 🪡 The Kakeya Conjecture | — (pure TypeScript) | Five live experiments on the needle problem — turn it in four rooms, slide a Perron tree until the area vanishes, count boxes to measure the dimension, compress tubes, focus a wave — plus a status ledger on OpenAI's October 2026 local-smoothing claim |
 | 🌈 Quantum Chromodynamics | — (pure TypeScript) | 9-act interactive descent into the strong force, with a per-section “picture honesty” score that decays from 78% to 4% |
 | 🌀 Wormhole Embedding Diagram | — (pure scalar Rust) | Interactive 3D Ellis/Flamm wormhole: weld morph, drag-orbit, throat traveler, flat annulus chart |
 | 🧠 Kolmogorov–Arnold Network | — (pure scalar Rust) | Live KAN training: B-spline edge functions fit 2D targets in-browser |

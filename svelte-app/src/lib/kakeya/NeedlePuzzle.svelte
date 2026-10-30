@@ -213,10 +213,12 @@ function draw() {
 		ctx.stroke();
 	}
 
-	// the direction dial: 72 ticks, lit when a legal placement was found
-	const cx = w - 54;
-	const cy = h - 54;
-	const rr = 34;
+	// the direction dial: 72 ticks, lit when a legal placement was found.
+	// On narrow canvases it sits in the top-right corner, clear of the shape.
+	const compact = w < 560;
+	const cx = w - (compact ? 38 : 54);
+	const cy = compact ? 42 : h - 54;
+	const rr = compact ? 24 : 34;
 	for (let i = 0; i < BUCKETS; i++) {
 		const th = (i / BUCKETS) * Math.PI * 2;
 		const inner = rr - (found[i] ? 12 : 7);
@@ -242,7 +244,8 @@ function draw() {
 	ctx.fillStyle = INK.text;
 	ctx.font = '10px ui-monospace, monospace';
 	ctx.textAlign = 'center';
-	ctx.fillText(`${count}/${BUCKETS}`, cx, cy - rr - 6);
+	ctx.fillText(`${count}/${BUCKETS}`, cx, cy - rr - 5);
+	ctx.textAlign = 'left';
 }
 
 function loop() {
