@@ -11,6 +11,7 @@ Twelve interactive demos running entirely in a ~900 KB WASM binary, plus pages t
 | Demo | Crates used | Description |
 |---|---|---|
 | 🧊 Object Folio | — (Three.js + Threlte) | Eight interactive 3D objects in one canvas: torus knot, Klein bottle, Möbius strip, spherical harmonic, superformula star and friends — orbit, spin, four material presets. Plus a catoid: one elongated cat wrapped around them, animated tail and Cheshire grin |
+| 🔬 Inside the Proof | — (pure TypeScript) | Reading notes on OpenAI's local smoothing preprint: direction filter, conserved current, quaternionic Monge–Ampère energy, log² bookkeeping — with four models of the machinery |
 | 🪡 The Kakeya Conjecture | — (pure TypeScript) | Five live experiments on the needle problem — turn it in four rooms, slide a Perron tree until the area vanishes, count boxes to measure the dimension, compress tubes, focus a wave — plus a status ledger on OpenAI's October 2026 local-smoothing claim |
 | 🌈 Quantum Chromodynamics | — (pure TypeScript) | 9-act interactive descent into the strong force, with a per-section “picture honesty” score that decays from 78% to 4% |
 | 🌀 Wormhole Embedding Diagram | — (pure scalar Rust) | Interactive 3D Ellis/Flamm wormhole: weld morph, drag-orbit, throat traveler, flat annulus chart |

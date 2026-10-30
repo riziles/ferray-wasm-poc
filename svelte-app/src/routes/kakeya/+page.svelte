@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { base } from '$app/paths';
   import NeedlePuzzle from '$lib/kakeya/NeedlePuzzle.svelte';
   import PerronDemo from '$lib/kakeya/PerronDemo.svelte';
   import DimensionDemo from '$lib/kakeya/DimensionDemo.svelte';
@@ -358,6 +359,20 @@
       claiming four conjectures at once.
     </p>
   </section>
+
+  <div class="rounded-lg border border-secondary-700/50 bg-secondary-950/20 p-4 flex flex-wrap items-center gap-3">
+    <div class="flex-1 min-w-[240px]">
+      <div class="font-bold text-secondary-200">Read the proof notes →</div>
+      <p class="text-xs text-surface-400 mt-1">
+        A companion page on the paper itself: the imaginary-time direction filter, the conserved
+        current built from two flows, the Monge–Ampère energy that produces 2n/(n−1), and why the loss
+        is exactly log²(2+N) — with four models of the machinery.
+      </p>
+    </div>
+    <a href="{base}/kakeya/proof" data-sveltekit-prefetch class="badge preset-filled-secondary-500">
+      Inside the proof
+    </a>
+  </div>
 
   <!-- ───────────────────────── 7 ───────────────────────── -->
   <section id="ledger" class="space-y-4 scroll-mt-16">

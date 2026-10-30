@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#2a1030"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#c084fc;stop-opacity:0.20"/>
+      <stop offset="100%" stop-color="#c084fc" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <text x="70" y="100" font-family="system-ui,sans-serif" font-weight="bold" font-size="52" fill="#e2e8f0">Inside the Proof</text>
+  <text x="70" y="144" font-family="system-ui,sans-serif" font-size="24" fill="#94a3b8">Local smoothing in every dimension — reading the OpenAI preprint</text>
+
+  <ellipse cx="330" cy="430" rx="260" ry="180" fill="url(#glow)"/>
+
+  <!-- the direction filter: a fan of directions collapsing into one beam -->
+  <g transform="translate(180,430)">
+    <g stroke="#38bdf8" stroke-width="2" stroke-opacity="0.45">
+      <line x1="0" y1="0" x2="260" y2="-120"/>
+      <line x1="0" y1="0" x2="270" y2="-80"/>
+      <line x1="0" y1="0" x2="275" y2="-40"/>
+      <line x1="0" y1="0" x2="280" y2="0"/>
+      <line x1="0" y1="0" x2="275" y2="40"/>
+      <line x1="0" y1="0" x2="270" y2="80"/>
+      <line x1="0" y1="0" x2="260" y2="120"/>
+    </g>
+    <g stroke="#fbbf24" stroke-width="4" stroke-linecap="round" stroke-opacity="0.95">
+      <line x1="0" y1="0" x2="300" y2="0"/>
+    </g>
+    <circle cx="0" cy="0" r="6" fill="#e2e8f0"/>
+    <text x="150" y="150" font-family="monospace" font-size="16" fill="#7dd3fc">translate by −iρ(1, ω)</text>
+  </g>
+
+  <!-- exponent chart motif -->
+  <g transform="translate(520,330)">
+    <line x1="0" y1="170" x2="210" y2="170" stroke="#334155" stroke-width="2"/>
+    <line x1="0" y1="170" x2="0" y2="0" stroke="#334155" stroke-width="2"/>
+    <line x1="6" y1="164" x2="200" y2="26" stroke="#38bdf8" stroke-width="3" stroke-dasharray="7 6"/>
+    <line x1="34" y1="128" x2="200" y2="52" stroke="#94a3b8" stroke-width="2.5" stroke-dasharray="7 6"/>
+    <text x="6" y="-6" font-family="monospace" font-size="14" fill="#38bdf8">1/(n−1)</text>
+    <text x="34" y="146" font-family="monospace" font-size="14" fill="#94a3b8">1/n</text>
+    <text x="0" y="192" font-family="monospace" font-size="14" fill="#64748b">log μ</text>
+  </g>
+
+  <text x="830" y="300" font-family="system-ui,sans-serif" font-weight="bold" font-size="24" fill="#e2e8f0">Live on the page</text>
+  <circle cx="838" cy="338" r="5" fill="#f87171"/>
+  <text x="858" y="344" font-family="system-ui,sans-serif" font-size="18" fill="#cbd5e1">an exponent ledger</text>
+  <circle cx="838" cy="378" r="5" fill="#fbbf24"/>
+  <text x="858" y="384" font-family="system-ui,sans-serif" font-size="18" fill="#cbd5e1">a dyadic shell budget</text>
+  <circle cx="838" cy="418" r="5" fill="#38bdf8"/>
+  <text x="858" y="424" font-family="system-ui,sans-serif" font-size="18" fill="#cbd5e1">a Gaussian direction filter</text>
+  <circle cx="838" cy="458" r="5" fill="#c084fc"/>
+  <text x="858" y="464" font-family="system-ui,sans-serif" font-size="18" fill="#cbd5e1">the determinant's scaling</text>
+
+  <text x="70" y="602" font-family="monospace" font-size="16" fill="#f59e0b">a conserved current ⇒ 2n/(n−1)</text>
+  <text x="1130" y="602" text-anchor="end" font-family="monospace" font-size="15" fill="#7c8ba1">riziles.github.io/ferray-wasm-poc/kakeya/proof</text>
+</svg>
