@@ -410,7 +410,7 @@
     <p class="text-surface-300 text-sm pt-2">
       Put the same numbers on a ruler instead of an axis and the shape of the objection changes. The
       crossings are not merely far away; they are past every physical quantity that could index an
-      <span class="font-mono">n</span>-variable problem:
+      <span class="font-mono">n</span>-variable problem. Hover or tab to a row for what each mark means:
     </p>
     <RealityRuler />
   </section>
@@ -663,13 +663,14 @@
       </li>
     </ul>
     <p class="text-xs text-surface-500 pt-2">
-      All four panels are plain TypeScript. The exponent chart evaluates 1/√ln n, ln ln n/√ln n and
-      (ln ln n)²/√ln n at 260 sample points and bisects for the crossover values in the caption; the
-      ruler places the same crossings against physical quantities on a log-log axis; the ledger is a
-      table with a dependency filter; and the rewrite panel generates a random 3-CNF, splits its
-      variables, counts both formulas by exact model counting (branching plus unit propagation) and
-      compares the totals — the “count preserved” badge is a computation, not a caption. Nothing here is
-      precomputed from the paper or copied from its figures.
+      All four panels are plain TypeScript and CSS. The exponent chart evaluates 1/√ln n, ln ln n/√ln n
+      and (ln ln n)²/√ln n at 260 sample points and bisects for the crossover values in the caption; the
+      ruler places the same crossings against physical quantities on a log-log axis and is built from DOM
+      text rather than a canvas, so its labels are selectable and every mark is a real button you can
+      hover or tab to; the ledger is a table with a dependency filter; and the rewrite panel generates a
+      random 3-CNF, splits its variables, counts both formulas by exact model counting (branching plus
+      unit propagation) and compares the totals — the “count preserved” badge is a computation, not a
+      caption. Nothing here is precomputed from the paper or copied from its figures.
     </p>
   </section>
 </div>
