@@ -4,6 +4,7 @@
   import ExponentLadder from '$lib/eth/ExponentLadder.svelte';
   import RealityRuler from '$lib/eth/RealityRuler.svelte';
   import CopyAndCycle from '$lib/eth/CopyAndCycle.svelte';
+  import HermiteRecovery from '$lib/eth/HermiteRecovery.svelte';
   import VacuityLedger from '$lib/eth/VacuityLedger.svelte';
 
   let scroll = $state(0);
@@ -130,7 +131,7 @@
     <div class="flex flex-wrap items-center gap-2">
       <span class="badge preset-filled-primary-500">reading notes</span>
       <span class="badge preset-tonal-warning">no WASM required</span>
-      <span class="badge preset-tonal">3 live panels</span>
+      <span class="badge preset-tonal">4 live panels</span>
       <span class="badge preset-tonal">the Bluesky thread, verbatim</span>
       <a href="{base}/kakeya" class="badge preset-tonal">← the Kakeya explainer</a>
     </div>
@@ -502,6 +503,15 @@
       is why the polynomial factor in (n + m)<sup>O<sub>k</sub>(1)</sup> is where the constants hide, and
       why nobody is going to implement this.
     </p>
+    <p class="text-surface-300 text-sm">
+      The fourth move has a core that is small enough to check exactly, and it is the one that feels
+      most like cheating: the algorithm never evaluates H at zero. It computes Taylor coefficients at
+      t = 1, …, Q and takes a fixed rational combination of them. Whether that combination exists is a
+      statement about one linear system, so the panel below solves that system over the rationals — and,
+      by moving a slider, shows the polynomial that proves the count is unrecoverable when there are too
+      few numbers.
+    </p>
+    <HermiteRecovery />
     <p class="text-surface-400 text-sm">
       None of that is a criticism of the proof; it is why the result was not found by the people who
       spent careers on the problem. It is also why the check is taking a while: the argument is
@@ -663,14 +673,16 @@
       </li>
     </ul>
     <p class="text-xs text-surface-500 pt-2">
-      All four panels are plain TypeScript and CSS. The exponent chart evaluates 1/√ln n, ln ln n/√ln n
+      All five panels are plain TypeScript and CSS. The exponent chart evaluates 1/√ln n, ln ln n/√ln n
       and (ln ln n)²/√ln n at 260 sample points and bisects for the crossover values in the caption; the
       ruler places the same crossings against physical quantities on a log-log axis and is built from DOM
       text rather than a canvas, so its labels are selectable and every mark is a real button you can
       hover or tab to; the ledger is a table with a dependency filter; and the rewrite panel generates a
       random 3-CNF, splits its variables, counts both formulas by exact model counting (branching plus
       unit propagation) and compares the totals — the “count preserved” badge is a computation, not a
-      caption. Nothing here is precomputed from the paper or copied from its figures.
+      caption. The recovery panel solves the interpolation system by Gauss–Jordan over the rationals,
+      with exact BigInt fractions, and exhibits Π(T−t)^J as the counterexample when QJ ≤ d. Nothing here
+      is precomputed from the paper or copied from its figures.
     </p>
   </section>
 </div>

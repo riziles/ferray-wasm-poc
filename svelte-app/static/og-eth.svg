@@ -66,6 +66,6 @@
     <text x="26" y="102" font-family="system-ui,sans-serif" font-size="19" fill="#cbd5e1">structure — it's that they *all* do.”</text>
   </g>
 
-  <text x="70" y="576" font-family="monospace" font-size="15" fill="#94a3b8">deterministic #k-SAT in 2^(n/(log n)^(1/2+o(1))) · Lean formalisation · four panels</text>
+  <text x="70" y="576" font-family="monospace" font-size="15" fill="#94a3b8">deterministic #k-SAT in 2^(n/(log n)^(1/2+o(1))) · Lean formalisation · five panels</text>
   <text x="1130" y="612" text-anchor="end" font-family="monospace" font-size="15" fill="#7c8ba1">riziles.github.io/ferray-wasm-poc/eth</text>
 </svg>
