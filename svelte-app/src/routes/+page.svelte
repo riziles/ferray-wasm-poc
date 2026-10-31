@@ -36,7 +36,7 @@
       <span class="text-surface-500">(Pure TypeScript — no WASM needed.)</span>
     </p>
     <div class="flex flex-wrap gap-2 text-xs">
-      <span class="badge preset-tonal">4 panels</span>
+      <span class="badge preset-tonal">5 panels</span>
       <span class="badge preset-tonal">the thread, verbatim</span>
       <span class="badge preset-tonal-warning">claims marked as claims</span>
       <a href="{base}/eth" data-sveltekit-prefetch class="badge preset-filled-primary-500">Read the ladder →</a>
