@@ -97,5 +97,16 @@
     "twitter:title": "\ud83d\udd2c Inside the Proof \u2014 how local smoothing was attacked",
     "twitter:description": "The mechanics of the OpenAI preprint, quoted by section, with four live models. Where the log\u00b2 comes from, and why 2n/(n\u22121) falls out of a determinant.",
     "twitter:image": "https://riziles.github.io/ferray-wasm-poc/og-kakeya-proof.png"
+  },
+  "eth": {
+    "og:title": "\ud83e\udde8 The Exponential Time Hypothesis is False | Ferray \u00d7 WASM",
+    "og:description": "OpenAI's October 2026 #SAT algorithm refutes ETH. Three exponents on one axis, the Bluesky thread that called it absurd, and the ledger of which conditional lower bounds just went vacuous \u2014 plus why 'subexponential' can still be worse than brute force.",
+    "og:image": "https://riziles.github.io/ferray-wasm-poc/og-eth.png",
+    "og:url": "https://riziles.github.io/ferray-wasm-poc/eth",
+    "og:type": "article",
+    "twitter:card": "summary_large_image",
+    "twitter:title": "\ud83e\udde8 The Exponential Time Hypothesis is False",
+    "twitter:description": "An exponent chart that makes 'subexponential' concrete, the thread that called it absurd, and what the refutation actually breaks.",
+    "twitter:image": "https://riziles.github.io/ferray-wasm-poc/og-eth.png"
   }
 }
