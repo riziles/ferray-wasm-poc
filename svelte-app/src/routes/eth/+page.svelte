@@ -2,6 +2,8 @@
   import { onMount } from 'svelte';
   import { base } from '$app/paths';
   import ExponentLadder from '$lib/eth/ExponentLadder.svelte';
+  import RealityRuler from '$lib/eth/RealityRuler.svelte';
+  import CopyAndCycle from '$lib/eth/CopyAndCycle.svelte';
   import VacuityLedger from '$lib/eth/VacuityLedger.svelte';
 
   let scroll = $state(0);
@@ -23,7 +25,7 @@
     { id: 'structure', n: 4, title: 'Every formula has structure now', tag: 'text' },
     { id: 'ladder', n: 5, title: 'The exponent is a joke, the limit is not', tag: 'live' },
     { id: 'damage', n: 6, title: 'What breaks, and what does not', tag: 'live' },
-    { id: 'mechanism', n: 7, title: 'What the proof actually does', tag: 'text' },
+    { id: 'mechanism', n: 7, title: 'What the proof actually does', tag: 'live' },
     { id: 'settled', n: 8, title: 'What is not settled', tag: 'text' }
   ];
 
@@ -128,7 +130,7 @@
     <div class="flex flex-wrap items-center gap-2">
       <span class="badge preset-filled-primary-500">reading notes</span>
       <span class="badge preset-tonal-warning">no WASM required</span>
-      <span class="badge preset-tonal">2 live panels</span>
+      <span class="badge preset-tonal">3 live panels</span>
       <span class="badge preset-tonal">the Bluesky thread, verbatim</span>
       <a href="{base}/kakeya" class="badge preset-tonal">← the Kakeya explainer</a>
     </div>
@@ -404,6 +406,13 @@
         better signal than a better exponent.
       </p>
     </div>
+
+    <p class="text-surface-300 text-sm pt-2">
+      Put the same numbers on a ruler instead of an axis and the shape of the objection changes. The
+      crossings are not merely far away; they are past every physical quantity that could index an
+      <span class="font-mono">n</span>-variable problem. Hover or tab to a row for what each mark means:
+    </p>
+    <RealityRuler />
   </section>
 
   <!-- ───────────────────────── 6 ───────────────────────── -->
@@ -470,6 +479,13 @@
         Q·J coefficients determine the polynomial, and its constant term is the count.
       </li>
     </ol>
+    <p class="text-surface-300 text-sm">
+      Only the first move is small enough to watch happen, and it is also the only one whose claim is
+      exactly checkable: the rewrite is supposed to leave the number of satisfying assignments alone.
+      So here is a real formula, rewritten, with both counts computed in the browser by exact model
+      counting.
+    </p>
+    <CopyAndCycle />
     <p class="text-surface-300 text-sm">
       The paper writes the cost as three multiplied factors and then balances them; this is the
       clearest single paragraph in it:
@@ -647,10 +663,14 @@
       </li>
     </ul>
     <p class="text-xs text-surface-500 pt-2">
-      Both panels are plain TypeScript. The exponent chart evaluates 1/√ln n, ln ln n/√ln n and
-      (ln ln n)²/√ln n directly at 260 sample points and bisects for the crossover values in the
-      caption; the ledger is a table with a dependency filter. Nothing here is precomputed from the
-      paper or copied from its figures.
+      All four panels are plain TypeScript and CSS. The exponent chart evaluates 1/√ln n, ln ln n/√ln n
+      and (ln ln n)²/√ln n at 260 sample points and bisects for the crossover values in the caption; the
+      ruler places the same crossings against physical quantities on a log-log axis and is built from DOM
+      text rather than a canvas, so its labels are selectable and every mark is a real button you can
+      hover or tab to; the ledger is a table with a dependency filter; and the rewrite panel generates a
+      random 3-CNF, splits its variables, counts both formulas by exact model counting (branching plus
+      unit propagation) and compares the totals — the “count preserved” badge is a computation, not a
+      caption. Nothing here is precomputed from the paper or copied from its figures.
     </p>
   </section>
 </div>
