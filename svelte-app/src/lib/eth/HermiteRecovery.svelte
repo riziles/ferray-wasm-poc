@@ -120,7 +120,9 @@
     ctx.setLineDash([]);
     ctx.fillStyle = 'rgba(248,113,113,0.85)';
     ctx.font = '10px ui-monospace, monospace';
-    ctx.fillText('T = 0', X(0) + 4, T + 8);
+    ctx.textAlign = 'center';
+    ctx.fillText('0', X(0), h - B + 13);
+    ctx.textAlign = 'left';
 
     // sample points: the data the algorithm actually has
     for (let t = 1; t <= Q; t++) {
@@ -152,12 +154,15 @@
     // the value(s) at zero, with the numbers printed — the gap is small on a
     // scale set by the polynomial's values, so the label carries it
     const yA = Y(Number(polyA[0]));
+    const clampY = (y: number) => Math.max(T + 12, Math.min(h - B - 8, y));
     ctx.beginPath();
     ctx.arc(X(0), yA, 3.5, 0, Math.PI * 2);
     ctx.fillStyle = INK.primary;
     ctx.fill();
+
     if (!determined && witnessFits) {
       const yB = Y(Number(polyA[0]) + Number(witnessAtZero));
+      // the two markers can be a pixel apart, so the values go on one line
       ctx.strokeStyle = 'rgba(251,191,36,0.7)';
       ctx.setLineDash([2, 2]);
       ctx.beginPath();
@@ -169,17 +174,22 @@
       ctx.arc(X(0), yB, 3.5, 0, Math.PI * 2);
       ctx.fillStyle = INK.warn;
       ctx.fill();
+
+      const label = `two counts: ${Number(polyA[0])} vs ${Number(polyA[0]) + Number(witnessAtZero)}`;
+      const ly = clampY(Math.min(yA, yB) - 12);
+      ctx.fillStyle = 'rgba(11,16,32,0.85)';
+      const wLabel = ctx.measureText(label).width;
+      ctx.fillRect(X(0) + 4, ly - 9, wLabel + 6, 13);
       ctx.fillStyle = INK.warn;
-      ctx.fillText(`${Number(polyA[0]) + Number(witnessAtZero)}`, X(0) + 6, yB + 3);
-      ctx.fillStyle = INK.primary;
-      ctx.fillText(`${Number(polyA[0])}`, X(0) + 6, yA + 3);
-      ctx.fillStyle = 'rgba(251,191,36,0.9)';
-      ctx.fillText('two counts', X(0) + 6, Math.max(yA, yB) + 14);
+      ctx.fillText(label, X(0) + 7, ly);
     } else {
+      const label = `the count: ${Number(polyA[0])}`;
+      const ly = clampY(yA - 12);
+      ctx.fillStyle = 'rgba(11,16,32,0.85)';
+      const wLabel = ctx.measureText(label).width;
+      ctx.fillRect(X(0) + 4, ly - 9, wLabel + 6, 13);
       ctx.fillStyle = INK.primary;
-      ctx.fillText(`${Number(polyA[0])}`, X(0) + 6, yA + 3);
-      ctx.fillStyle = 'rgba(56,189,248,0.9)';
-      ctx.fillText('the count', X(0) + 6, yA - 10);
+      ctx.fillText(label, X(0) + 7, ly);
     }
 
     ctx.fillStyle = INK.text;
